@@ -25,18 +25,18 @@ typedef struct {
     uint32_t dstAs;              // destination AS
     uint32_t dstGeo;             // IGNORE
     uint32_t dstMac;             // IGNORE
-    uint32_t headerLen;          //
+    uint32_t headerLen;          // IGNORE
     uint64_t inBytes;            // number of bytes in
     uint64_t inPkts;             // number of packets in
     uint32_t inputPort;          // input interface identifier
-    uint32_t ipSize;             //
+    uint32_t ipSize;             // IGNORE
     uint32_t ipv4DstAddr;        // IPv4 dst address
-    uint32_t ipv4SrcAddr;        // IPv6 src address
+    uint32_t ipv4SrcAddr;        // IPv4 src address
     uint32_t l4DstPort;          // layer 4 dst port
     uint32_t l4SrcPort;          // layer 4 src port
     uint32_t outputPort;         // output interface identifier
     uint32_t protocol;           // IP protocol number
-    uint32_t sampledPacketSize;  //
+    uint32_t sampledPacketSize;  // IGNORE
     uint32_t srcAs;              // source AS
     uint32_t srcGeo;             // IGNORE
     uint32_t srcMac;             // IGNORE
@@ -45,7 +45,7 @@ typedef struct {
     uint32_t vlanIn;             // input VLAN number
     uint32_t vlanOut;            // output VLAN number
     uint32_t ipv4NextHop;        // IPv4 next-hop address
-    uint32_t mplsType;           //
+    uint32_t mplsType;           // IGNORE
     uint64_t outBytes;           // number of bytes out
     uint64_t outPkts;            // number of packets out
     uint32_t tcpRetransmit;      // number of packets retransmitted

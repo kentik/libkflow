@@ -11,16 +11,16 @@ type DeviceResponse struct {
 }
 
 type Device struct {
-	ID        string        `json:"id"`
+	ID        int           `json:"id,string"`
 	Name      string        `json:"device_name"`
-	CompanyID string        `json:"company_id"`
+	CompanyID int           `json:"company_id,string"`
 	Custom    CustomColumns `json:"custom_columns"`
 }
 
 type CustomColumns map[string]uint64
 
 func (d *Device) ClientID() string {
-	return fmt.Sprintf("%s:%s:%s", d.CompanyID, d.Name, d.ID)
+	return fmt.Sprintf("%d:%s:%d", d.CompanyID, d.Name, d.ID)
 }
 
 func (c *CustomColumns) UnmarshalJSON(data []byte) error {

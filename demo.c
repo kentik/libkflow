@@ -5,18 +5,18 @@
 int main(int argc, char **argv) {
     int r;
     kflowConfig cfg = {
-        .URL = "http://chdev:20012/chf",
+        .URL = "http://127.0.0.1:8999/chf",
         .API = {
-            .email = "will@kentik.com",
-            .token = "81b7262feceecc94eef3ddafbc2c152f",
-            .URL   = "http://chdev:8080/api/v5",
+            .email = "test@example.com",
+            .token = "token",
+            .URL   = "http://127.0.0.1:8999/api/v5",
         },
-        .device_id = 1001,
+        .device_id = 1,
         .verbose   = 1,
     };
 
     if ((r = kflowInit(&cfg)) != 0) {
-        printf("error initializing libkflow: %d", r);
+        printf("error initializing libkflow: %d\n", r);
         exit(1);
     };
 
@@ -30,12 +30,12 @@ int main(int argc, char **argv) {
     };
 
     if ((r = kflowSend(&flow)) != 0) {
-        printf("error sending flow: %d", r);
+        printf("error sending flow: %d\n", r);
         exit(1);
     }
 
     if ((r = kflowStop(10*1000)) != 0) {
-        printf("error stopping libkflow: %d", r);
+        printf("error stopping libkflow: %d\n", r);
         exit(1);
     }
 

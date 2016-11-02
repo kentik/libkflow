@@ -61,7 +61,7 @@ func (s *Sender) Send(msg *capnp.Message) bool {
 }
 
 func (s *Sender) Stop(wait time.Duration) bool {
-	s.Exit <- struct{}{}
+	close(s.Flow)
 	select {
 	case <-s.Exit:
 		return true
@@ -75,28 +75,24 @@ func (s *Sender) dispatch() {
 	cid := [80]byte{}
 	url := s.URL.String()
 
-	for {
-		select {
-		case msg := <-s.Flow:
-			buf.Reset()
-			buf.Write(cid[:])
+	for msg := range s.Flow {
+		buf.Reset()
+		buf.Write(cid[:])
 
-			err := capnp.NewPackedEncoder(buf).Encode(msg)
-			if err != nil {
-				// FIXME: check verbosity
-				log.Print("NewPackedEncoder", err)
-				continue
-			}
+		err := capnp.NewPackedEncoder(buf).Encode(msg)
+		if err != nil {
+			// FIXME: check verbosity
+			log.Print("NewPackedEncoder", err)
+			continue
+		}
 
-			err = s.Client.SendFlow(url, buf)
-			if err != nil {
-				// FIXME: check verbosity
-				log.Print("HTTP", err)
-				continue
-			}
-		case <-s.Exit:
-			s.Exit <- struct{}{}
-			return
+		err = s.Client.SendFlow(url, buf)
+		if err != nil {
+			// FIXME: check verbosity
+			log.Print("HTTP", err)
+			continue
 		}
 	}
+
+	s.Exit <- struct{}{}
 }
