@@ -4,7 +4,9 @@ package main
 import "C"
 import (
 	"net/url"
+	"reflect"
 	"time"
+	"unsafe"
 )
 
 var sender *Sender
@@ -37,6 +39,21 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 func kflowSend(cflow *C.kflow) C.int {
 	if sender == nil {
 		return C.EKFLOWNOINIT
+	}
+
+	customs := *(*[]C.kflowCustom)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: (uintptr)(unsafe.Pointer(cflow.customs)),
+		Len:  int(cflow.numCustoms),
+		Cap:  int(cflow.numCustoms),
+	}))
+
+	for i, c := range customs {
+		name := C.GoString(c.name)
+		id, ok := sender.Customs[name]
+		if !ok {
+			return C.EKFLOWNOCUSTOM
+		}
+		customs[i].id = (C.uint64_t)(id)
 	}
 
 	msg, err := Pack((*Ckflow)(cflow))

@@ -16,6 +16,25 @@ typedef struct {
     int verbose;                 // logging verbosity level
 } kflowConfig;
 
+// struct kflowCustom defines a custom flow field which may
+// contain a string, uint32, or float32 value.
+typedef struct {
+    char *name;                  // field name
+    uint64_t id;                 // IGNORE
+    int vtype;                   // value type
+    union {
+        char *str;               // string value
+        uint32_t u32;            // uint32 value
+        float f32;               // float32 value
+    } value;                     // field value
+} kflowCustom;
+
+// custom value types:
+
+#define KFLOWCUSTOMSTR 1
+#define KFLOWCUSTOMU32 2
+#define KFLOWCUSTOMF32 3
+
 // struct kflow defines the flow fields that may be sent to Kentik.
 // MAC and IPv4 addresses are represented as bytes packed in network
 // byte order, 6 bytes for MAC and 4 for IPv4. IPv6 addresses are
@@ -81,7 +100,9 @@ typedef struct {
     uint8_t *ipv6SrcAddr;        // IPv6 src address
     uint64_t srcEthMac;          // src Ethernet MAC address
     uint64_t dstEthMac;          // dst Ethernet MAC address
-    // FIXME: customs
+
+    kflowCustom *customs;        // custom field array
+    uint32_t numCustoms;         // custom field count
 } kflow;
 
 // kflowInit initializes the library and must be called prior
@@ -108,5 +129,6 @@ int kflowStop(int);
 #define EKFLOWNOMEM    3         // out of memory
 #define EKFLOWTIMEOUT  4         // request timed out
 #define EKFLOWSEND     5         // flow could not be sent
+#define EKFLOWNOCUSTOM 6         // custom field does not exist
 
 #endif // KFLOW_H

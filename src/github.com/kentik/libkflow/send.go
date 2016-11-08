@@ -17,6 +17,7 @@ type Sender struct {
 	Timeout time.Duration
 	Client  *api.Client
 	Verbose int
+	Customs api.CustomColumns
 }
 
 func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
@@ -37,13 +38,12 @@ func (s *Sender) Validate(url, email, token string, did int) error {
 		return err
 	}
 
-	// FIXME: use custom columns
-
 	q := s.URL.Query()
 	q.Set("sid", "0")
 	q.Set("sender_id", device.ClientID())
-	s.URL.RawQuery = q.Encode()
 
+	s.URL.RawQuery = q.Encode()
+	s.Customs = device.Customs
 	s.Client.Header.Set("Content-Type", "application/binary")
 
 	go s.dispatch()

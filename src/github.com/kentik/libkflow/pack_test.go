@@ -82,20 +82,10 @@ func TestPack(t *testing.T) {
 		dstEthMac:         _Ctype_uint64_t(rand.Int63()),
 	}
 
-	msg, err := Pack(f)
-	assert.NoError(err)
-
-	buf := &bytes.Buffer{}
-
-	assert.NoError(capnp.NewPackedEncoder(buf).Encode(msg))
-	msg, err = capnp.NewPackedDecoder(buf).Decode()
-	assert.NoError(err)
-
-	root, err := chf.ReadRootPackedCHF(msg)
-	assert.NoError(err)
-
-	msgs, err := root.Msgs()
-	assert.NoError(err)
+	msgs, err := roundtrip(f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.EqualValues(1, msgs.Len())
 
 	kflow := msgs.At(0)
@@ -169,6 +159,87 @@ func TestPack(t *testing.T) {
 	runtime.KeepAlive(ipv6dstaddr)
 }
 
+func TestPackCustoms(t *testing.T) {
+	assert := assert.New(t)
+
+	customs := []Custom{
+		{ID: 1, Value: string("foo")},
+		{ID: 2, Value: uint32(42)},
+		{ID: 3, Value: float32(3.14)},
+	}
+
+	ckcust := make([]_Ctype_kflowCustom, len(customs))
+	for i, c := range customs {
+		ckcust[i] = c.ToC()
+	}
+
+	flow := &Ckflow{
+		numCustoms: _Ctype_uint32_t(len(ckcust)),
+	}
+	*(**_Ctype_kflowCustom)(unsafe.Pointer(&flow.customs)) = &ckcust[0]
+
+	msgs, err := roundtrip(flow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.EqualValues(1, msgs.Len())
+
+	list, _ := msgs.At(0).Custom()
+	for i := 0; i < list.Len(); i++ {
+		c := list.At(i)
+
+		assert.EqualValues(customs[i].ID, c.Id())
+
+		switch expected := customs[i].Value.(type) {
+		case string:
+			val, _ := c.Value().StrVal()
+			assert.Equal(chf.Custom_value_Which_strVal, c.Value().Which())
+			assert.Equal(expected, val)
+		case uint32:
+			val := c.Value().Uint32Val()
+			assert.Equal(chf.Custom_value_Which_uint32Val, c.Value().Which())
+			assert.Equal(expected, val)
+		case float32:
+			val := c.Value().Float32Val()
+			assert.Equal(chf.Custom_value_Which_float32Val, c.Value().Which())
+			assert.Equal(expected, val)
+		default:
+			t.Fatal("unsupported custom column type", reflect.TypeOf(expected))
+		}
+	}
+}
+
+func roundtrip(flows ...*Ckflow) (msgs chf.CHF_List, err error) {
+	buf := &bytes.Buffer{}
+
+	msg, err := Pack(flows...)
+	if err != nil {
+		return
+	}
+
+	err = capnp.NewPackedEncoder(buf).Encode(msg)
+	if err != nil {
+		return
+	}
+
+	msg, err = capnp.NewPackedDecoder(buf).Decode()
+	if err != nil {
+		return
+	}
+
+	root, err := chf.ReadRootPackedCHF(msg)
+	if err != nil {
+		return
+	}
+
+	msgs, err = root.Msgs()
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func assertEqualValues(t *testing.T, expected interface{}, actual interface{}) bool {
 	switch v := expected.(type) {
 	case *_Ctype_uint8_t:
@@ -198,4 +269,34 @@ func randbytes(n int) []byte {
 		b[i] = byte(rand.Int31n(256))
 	}
 	return b
+}
+
+type Custom struct {
+	ID    uint32
+	Value interface{}
+}
+
+func (c *Custom) ToC() _Ctype_kflowCustom {
+	kc := _Ctype_kflowCustom{
+		id: _Ctype_uint64_t(c.ID),
+	}
+
+	p := unsafe.Pointer(&kc.value[0])
+	switch v := c.Value.(type) {
+	case string:
+		kc.vtype = 1
+		array := make([]_Ctype_char, len(v)+1)
+		for i := range v {
+			array[i] = _Ctype_char(v[i])
+		}
+		*(**_Ctype_char)(p) = &array[0]
+	case uint32:
+		kc.vtype = 2
+		*(*_Ctype_uint32_t)(p) = _Ctype_uint32_t(v)
+	case float32:
+		kc.vtype = 3
+		*(*_Ctype_float)(p) = _Ctype_float(v)
+	}
+
+	return kc
 }

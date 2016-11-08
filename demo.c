@@ -20,6 +20,13 @@ int main(int argc, char **argv) {
         exit(1);
     };
 
+    kflowCustom customs[] = {
+        { .name = "CUSTOM-STR", .vtype = KFLOWCUSTOMSTR, .value.str = &"foo"[0] },
+        { .name = "CUSTOM-U32", .vtype = KFLOWCUSTOMU32, .value.u32 = 42        },
+        { .name = "CUSTOM-F32", .vtype = KFLOWCUSTOMF32, .value.f32 = 3.14      },
+    };
+    uint32_t numCustoms = sizeof(customs) / sizeof(kflowCustom);
+
     kflow flow = {
         .deviceId    = cfg.device_id,
         .ipv4SrcAddr = 167772161,
@@ -27,6 +34,8 @@ int main(int argc, char **argv) {
         .srcAs       = 1234,
         .inPkts      = 20,
         .inBytes     = 40,
+        .customs     = customs,
+        .numCustoms  = numCustoms,
     };
 
     if ((r = kflowSend(&flow)) != 0) {

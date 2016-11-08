@@ -4,6 +4,7 @@ package main
 import "C"
 
 import (
+	"reflect"
 	"unsafe"
 
 	"github.com/kentik/libkflow/chf"
@@ -98,12 +99,55 @@ func Pack(flows ...*Ckflow) (*capnp.Message, error) {
 		kflow.SetSrcEthMac(uint64(cflow.srcEthMac))
 		kflow.SetDstEthMac(uint64(cflow.dstEthMac))
 
+		list, err := PackCustoms(cflow, seg)
+		if err != nil {
+			return nil, err
+		}
+		kflow.SetCustom(*list)
+
 		msgs.Set(i, kflow)
 	}
 
 	root.SetMsgs(msgs)
 
 	return msg, nil
+}
+
+func PackCustoms(cflow *Ckflow, seg *capnp.Segment) (*chf.Custom_List, error) {
+	customs := *(*[]C.kflowCustom)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: (uintptr)(unsafe.Pointer(cflow.customs)),
+		Len:  int(cflow.numCustoms),
+		Cap:  int(cflow.numCustoms),
+	}))
+
+	list, err := chf.NewCustom_List(seg, int32(len(customs)))
+	if err != nil {
+		return nil, err
+	}
+
+	for i, ccc := range customs {
+		c, err := chf.NewCustom(seg)
+		if err != nil {
+			return nil, err
+		}
+
+		p := unsafe.Pointer(&ccc.value[0])
+		v := c.Value()
+
+		c.SetId(uint32(ccc.id))
+		switch ccc.vtype {
+		case C.KFLOWCUSTOMSTR:
+			v.SetStrVal(C.GoString(*(**C.char)(p)))
+		case C.KFLOWCUSTOMU32:
+			v.SetUint32Val(uint32(*(*C.uint32_t)(p)))
+		case C.KFLOWCUSTOMF32:
+			v.SetFloat32Val(float32(*(*C.float)(p)))
+		}
+
+		list.Set(i, c)
+	}
+
+	return &list, nil
 }
 
 func bts(p *C.uint8_t, len C.int) []byte {

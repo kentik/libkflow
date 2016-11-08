@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type DeviceResponse struct {
@@ -14,7 +15,7 @@ type Device struct {
 	ID        int           `json:"id,string"`
 	Name      string        `json:"device_name"`
 	CompanyID int           `json:"company_id,string"`
-	Custom    CustomColumns `json:"custom_columns"`
+	Customs   CustomColumns `json:"custom_columns"`
 }
 
 type CustomColumns map[string]uint64
@@ -34,4 +35,12 @@ func (c *CustomColumns) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var split = regexp.MustCompile(`(\w+)=(\d+),?`)
+func (c *CustomColumns) MarshalJSON() ([]byte, error) {
+	kvs := make([]string, 0, len(*c))
+	for k, v := range *c {
+		kvs = append(kvs, fmt.Sprintf("%s=%d", k, v))
+	}
+	return []byte(`"` + strings.Join(kvs, ",") + `"`), nil
+}
+
+var split = regexp.MustCompile(`([\w-]+)=(\d+),?`)

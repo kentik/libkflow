@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"reflect"
 	"text/tabwriter"
 
 	"github.com/kentik/libkflow/chf"
@@ -75,6 +76,31 @@ func Print(i int, flow chf.CHF) {
 	fmt.Fprintf(w, "  ipv6SrcAddr:\t%v\n", ip(flow.Ipv6SrcAddr()))
 	fmt.Fprintf(w, "  srcEthMac:\t%v\n", flow.SrcEthMac())
 	fmt.Fprintf(w, "  dstEthMac:\t%v\n", flow.DstEthMac())
+
+	customs, _ := flow.Custom()
+	fmt.Fprintf(w, "  CUSTOM FIELDS (%d)\t\n", customs.Len())
+
+	for i := 0; i < customs.Len(); i++ {
+		c := customs.At(i)
+		v := c.Value()
+
+		var value interface{}
+		var vtype reflect.Kind
+		switch v.Which() {
+		case chf.Custom_value_Which_strVal:
+			value, _ = v.StrVal()
+			vtype = reflect.String
+		case chf.Custom_value_Which_uint32Val:
+			value = v.Uint32Val()
+			vtype = reflect.Uint32
+		case chf.Custom_value_Which_float32Val:
+			value = v.Float32Val()
+			vtype = reflect.Float32
+		}
+
+		fmt.Fprintf(w, "    ID %d (%s):\t%v\n", c.Id(), vtype, value)
+	}
+
 	w.Flush()
 
 	log.Output(0, buf.String())
