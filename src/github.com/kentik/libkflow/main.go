@@ -25,10 +25,14 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 	email := C.GoString(cfg.API.email)
 	token := C.GoString(cfg.API.token)
 
-	err = s.Validate(C.GoString(cfg.API.URL), email, token, int(cfg.device_id))
+	clientid, err := s.Validate(C.GoString(cfg.API.URL), email, token, int(cfg.device_id))
 	if err != nil {
 		return C.EKFLOWCONFIG
 	}
+
+	metrics := NewMetrics(clientid)
+	_ = metrics
+	//metrics.Start(C.GoString(cfg.API.URL), email, token)
 
 	sender = s
 

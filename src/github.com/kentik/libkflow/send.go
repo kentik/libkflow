@@ -16,6 +16,7 @@ type Sender struct {
 	URL     *url.URL
 	Timeout time.Duration
 	Client  *api.Client
+	Metrics *Metrics
 	Verbose int
 	Customs api.CustomColumns
 }
@@ -30,12 +31,12 @@ func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
 	}
 }
 
-func (s *Sender) Validate(url, email, token string, did int) error {
+func (s *Sender) Validate(url, email, token string, did int) (string, error) {
 	s.Client = api.NewClient(email, token, s.Timeout)
 
 	device, err := s.Client.GetDevice(url, did)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	q := s.URL.Query()
@@ -48,7 +49,7 @@ func (s *Sender) Validate(url, email, token string, did int) error {
 
 	go s.dispatch()
 
-	return nil
+	return device.ClientID(), nil
 }
 
 func (s *Sender) Send(msg *capnp.Message) bool {

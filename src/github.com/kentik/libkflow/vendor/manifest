@@ -10,10 +10,70 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/influxdata/influxdb/models",
+			"repository": "https://github.com/influxdata/influxdb",
+			"vcs": "git",
+			"revision": "ee4d04de4eb177b0beccd6d7f3a9c2eb31882db0",
+			"branch": "master",
+			"path": "/models",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/influxdata/influxdb/pkg/escape",
+			"repository": "https://github.com/influxdata/influxdb",
+			"vcs": "git",
+			"revision": "ee4d04de4eb177b0beccd6d7f3a9c2eb31882db0",
+			"branch": "master",
+			"path": "pkg/escape",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/influxdb/influxdb/client",
+			"repository": "https://github.com/influxdb/influxdb",
+			"vcs": "git",
+			"revision": "ee4d04de4eb177b0beccd6d7f3a9c2eb31882db0",
+			"branch": "master",
+			"path": "/client",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/jessevdk/go-flags",
 			"repository": "https://github.com/jessevdk/go-flags",
 			"vcs": "git",
 			"revision": "0648c820cd4e564706597268ae2d2c7d9e6900c6",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/kentik/common/cmetrics/httptsdb",
+			"repository": "https://github.com/kentik/common",
+			"vcs": "git",
+			"revision": "ef8ed24a7666370d9fa056846a595e88a9448b96",
+			"branch": "master",
+			"path": "/cmetrics/httptsdb",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/kentik/go-metrics",
+			"repository": "https://github.com/kentik/go-metrics",
+			"vcs": "git",
+			"revision": "d05a8439b0a06f29afb19b74ddb65489a791fc44",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/rcrowley/go-metrics",
+			"repository": "https://github.com/rcrowley/go-metrics",
+			"vcs": "git",
+			"revision": "ab2277b1c5d15c3cba104e9cbddbdfc622df5ad8",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/stathat/go",
+			"repository": "https://github.com/stathat/go",
+			"vcs": "git",
+			"revision": "74669b9f388d9d788c97399a0824adbfee78400e",
 			"branch": "master",
 			"notests": true
 		},
