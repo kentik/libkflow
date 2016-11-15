@@ -74,8 +74,8 @@ func Print(i int, flow chf.CHF) {
 	fmt.Fprintf(w, "  dstThirdAsn:\t%v\n", flow.DstThirdAsn())
 	fmt.Fprintf(w, "  ipv6DstAddr:\t%v\n", ip(flow.Ipv6DstAddr()))
 	fmt.Fprintf(w, "  ipv6SrcAddr:\t%v\n", ip(flow.Ipv6SrcAddr()))
-	fmt.Fprintf(w, "  srcEthMac:\t%v\n", flow.SrcEthMac())
-	fmt.Fprintf(w, "  dstEthMac:\t%v\n", flow.DstEthMac())
+	fmt.Fprintf(w, "  srcEthMac:\t%v\n", mac(flow.SrcEthMac()))
+	fmt.Fprintf(w, "  dstEthMac:\t%v\n", mac(flow.DstEthMac()))
 
 	customs, _ := flow.Custom()
 	fmt.Fprintf(w, "  CUSTOM FIELDS (%d)\t\n", customs.Len())
@@ -115,6 +115,17 @@ func ip(v interface{}, _ ...error) net.IP {
 	default:
 		return (net.IP)(nil)
 	}
+}
+
+func mac(v uint64) net.HardwareAddr {
+	return net.HardwareAddr([]byte{
+		byte(v >> 40),
+		byte(v >> 32),
+		byte(v >> 24),
+		byte(v >> 16),
+		byte(v >> 8),
+		byte(v),
+	})
 }
 
 func str(v interface{}, _ error) interface{} {

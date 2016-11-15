@@ -34,6 +34,8 @@ int main(int argc, char **argv) {
         .srcAs       = 1234,
         .inPkts      = 20,
         .inBytes     = 40,
+        .srcEthMac   = 1250999896491,
+        .dstEthMac   = 226426397786884,
         .customs     = customs,
         .numCustoms  = numCustoms,
     };
