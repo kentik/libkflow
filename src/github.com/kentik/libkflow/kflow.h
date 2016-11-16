@@ -11,6 +11,10 @@ typedef struct {
         char *token;             // Kentik API access token
         char *URL;               // URL of API HTTP server
     } API;
+    struct {
+        int interval;            // metrics flush interval (s)
+        char *URL;               // URL of metrics server
+    } metrics;
     int device_id;               // device ID
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level

@@ -209,10 +209,41 @@ func TestPackCustoms(t *testing.T) {
 	}
 }
 
+func pack(flows ...*Ckflow) (*capnp.Message, error) {
+	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := chf.NewRootPackedCHF(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	msgs, err := root.NewMsgs(int32(len(flows)))
+	if err != nil {
+		return nil, err
+	}
+
+	for i, cflow := range flows {
+		kflow, err := Pack(seg, cflow)
+		if err != nil {
+			return nil, err
+		}
+
+		msgs.Set(i, kflow)
+
+	}
+
+	root.SetMsgs(msgs)
+
+	return msg, nil
+}
+
 func roundtrip(flows ...*Ckflow) (msgs chf.CHF_List, err error) {
 	buf := &bytes.Buffer{}
 
-	msg, err := Pack(flows...)
+	msg, err := pack(flows...)
 	if err != nil {
 		return
 	}

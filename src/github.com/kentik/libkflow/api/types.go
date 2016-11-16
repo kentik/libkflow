@@ -12,10 +12,11 @@ type DeviceResponse struct {
 }
 
 type Device struct {
-	ID        int           `json:"id,string"`
-	Name      string        `json:"device_name"`
-	CompanyID int           `json:"company_id,string"`
-	Customs   CustomColumns `json:"custom_columns"`
+	ID          int           `json:"id,string"`
+	Name        string        `json:"device_name"`
+	MaxFlowRate int           `json:"max_flow_rate"`
+	CompanyID   int           `json:"company_id,string"`
+	Customs     CustomColumns `json:"custom_columns"`
 }
 
 type CustomColumns map[string]uint64

@@ -11,6 +11,10 @@ int main(int argc, char **argv) {
             .token = "token",
             .URL   = "http://127.0.0.1:8999/api/v5",
         },
+        .metrics = {
+            .interval = 1,
+            .URL      = "http://127.0.0.1:8889/metrics",
+        },
         .device_id = 1,
         .verbose   = 1,
     };

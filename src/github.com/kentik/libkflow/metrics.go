@@ -8,6 +8,7 @@ import (
 
 	"github.com/kentik/common/cmetrics/httptsdb"
 	"github.com/kentik/go-metrics"
+	"github.com/kentik/libkflow/agg"
 )
 
 const (
@@ -17,16 +18,7 @@ const (
 )
 
 type Metrics struct {
-	Total            metrics.Meter
-	Pkts             metrics.Meter
-	TotalFlowsOut    metrics.Meter
-	ReadBacklog      metrics.Meter
-	WriteBacklog     metrics.Meter
-	DownsampleFPS    metrics.Meter
-	OrigSampleRate   metrics.Histogram
-	NewSampleRate    metrics.Histogram
-	DiscardedPackets metrics.Meter // FIXME: don't need?
-	RateLimitDrops   metrics.Meter
+	agg.Metrics
 }
 
 func NewMetrics(clientid string) *Metrics {
@@ -41,20 +33,17 @@ func NewMetrics(clientid string) *Metrics {
 	}
 
 	return &Metrics{
-		Total:            metrics.GetOrRegisterMeter(name("Total"), nil),
-		Pkts:             metrics.GetOrRegisterMeter(name("Pkts"), nil),
-		ReadBacklog:      metrics.GetOrRegisterMeter(name("ReadBacklog"), nil),
-		WriteBacklog:     metrics.GetOrRegisterMeter(name("WriteBacklog"), nil),
-		DownsampleFPS:    metrics.GetOrRegisterMeter(name("DownsampleFPS"), nil),
-		OrigSampleRate:   metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
-		NewSampleRate:    metrics.GetOrRegisterHistogram(name("NewSampleRate"), nil, sample()),
-		DiscardedPackets: metrics.GetOrRegisterMeter(name("DiscardedPackets"), nil),
-		RateLimitDrops:   metrics.GetOrRegisterMeter(name("RateLimitDrops"), nil),
-		TotalFlowsOut:    metrics.GetOrRegisterMeter(name("TotalFlowsOut"), nil),
+		agg.Metrics{
+			TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), nil),
+			TotalFlowsOut:  metrics.GetOrRegisterMeter(name("TotalFlowsOut"), nil),
+			OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
+			NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), nil, sample()),
+			RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), nil),
+		},
 	}
 }
 
-func (m *Metrics) Start(url, email, token string) {
+func (m *Metrics) Start(url, email, token string, interval time.Duration) {
 	extra := map[string]string{
 		"ver":   "libkflow-" + Version,
 		"ft":    "nprobe",
@@ -65,7 +54,7 @@ func (m *Metrics) Start(url, email, token string) {
 	go httptsdb.OpenTSDBWithConfig(httptsdb.OpenTSDBConfig{
 		Addr:               url,
 		Registry:           metrics.DefaultRegistry,
-		FlushInterval:      1 * time.Second,
+		FlushInterval:      interval,
 		DurationUnit:       time.Millisecond,
 		Prefix:             "chf",
 		Debug:              false,
@@ -76,11 +65,4 @@ func (m *Metrics) Start(url, email, token string) {
 		ApiEmail:           &email,
 		ApiPassword:        &token,
 	})
-}
-
-func (m *Metrics) Update(packets uint64, backlog int) {
-	if m == nil {
-		return
-	}
-
 }

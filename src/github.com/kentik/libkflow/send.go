@@ -6,24 +6,24 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
+	"github.com/kentik/libkflow/chf"
 	"zombiezen.com/go/capnproto2"
 )
 
 type Sender struct {
-	Flow    chan *capnp.Message
+	Agg     *agg.Agg
 	Exit    chan struct{}
 	URL     *url.URL
 	Timeout time.Duration
 	Client  *api.Client
-	Metrics *Metrics
 	Verbose int
 	Customs api.CustomColumns
 }
 
 func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
 	return &Sender{
-		Flow:    make(chan *capnp.Message, 100),
 		Exit:    make(chan struct{}),
 		URL:     url,
 		Timeout: timeout,
@@ -31,38 +31,33 @@ func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
 	}
 }
 
-func (s *Sender) Validate(url, email, token string, did int) (string, error) {
-	s.Client = api.NewClient(email, token, s.Timeout)
-
-	device, err := s.Client.GetDevice(url, did)
-	if err != nil {
-		return "", err
-	}
+func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device) error {
+	client.Header.Set("Content-Type", "application/binary")
 
 	q := s.URL.Query()
 	q.Set("sid", "0")
 	q.Set("sender_id", device.ClientID())
 
+	s.Agg = agg
 	s.URL.RawQuery = q.Encode()
 	s.Customs = device.Customs
-	s.Client.Header.Set("Content-Type", "application/binary")
+	s.Client = client
 
 	go s.dispatch()
 
-	return device.ClientID(), nil
+	return nil
 }
 
-func (s *Sender) Send(msg *capnp.Message) bool {
-	select {
-	case s.Flow <- msg:
-		return true
-	default:
-		return false
-	}
+func (s *Sender) Segment() *capnp.Segment {
+	return s.Agg.Segment()
+}
+
+func (s *Sender) Send(flow *chf.CHF) {
+	s.Agg.Add(flow)
 }
 
 func (s *Sender) Stop(wait time.Duration) bool {
-	close(s.Flow)
+	s.Agg.Stop()
 	select {
 	case <-s.Exit:
 		return true
@@ -76,24 +71,32 @@ func (s *Sender) dispatch() {
 	cid := [80]byte{}
 	url := s.URL.String()
 
-	for msg := range s.Flow {
-		buf.Reset()
-		buf.Write(cid[:])
+	for {
+		select {
+		case msg := <-s.Agg.Output():
+			buf.Reset()
+			buf.Write(cid[:])
 
-		err := capnp.NewPackedEncoder(buf).Encode(msg)
-		if err != nil {
-			// FIXME: check verbosity
-			log.Print("NewPackedEncoder", err)
-			continue
-		}
+			err := capnp.NewPackedEncoder(buf).Encode(msg)
+			if err != nil {
+				// FIXME: check verbosity
+				log.Print("NewPackedEncoder", err)
+				continue
+			}
 
-		err = s.Client.SendFlow(url, buf)
-		if err != nil {
+			err = s.Client.SendFlow(url, buf)
+			if err != nil {
+				// FIXME: check verbosity
+				log.Print("HTTP", err)
+				continue
+			}
+		case err := <-s.Agg.Errors():
 			// FIXME: check verbosity
-			log.Print("HTTP", err)
-			continue
+			log.Print("agg error", err)
+		case <-s.Agg.Done():
+			s.Exit <- struct{}{}
+			return
 		}
 	}
 
-	s.Exit <- struct{}{}
 }

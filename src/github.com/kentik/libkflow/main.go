@@ -7,6 +7,9 @@ import (
 	"reflect"
 	"time"
 	"unsafe"
+
+	"github.com/kentik/libkflow/agg"
+	"github.com/kentik/libkflow/api"
 )
 
 var sender *Sender
@@ -18,23 +21,33 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 		return C.EKFLOWCONFIG
 	}
 
-	timeout := time.Duration(cfg.timeout) * time.Millisecond
+	var (
+		email   = C.GoString(cfg.API.email)
+		token   = C.GoString(cfg.API.token)
+		timeout = time.Duration(cfg.timeout) * time.Millisecond
+	)
 
-	s := NewSender(url, timeout, int(cfg.verbose))
-
-	email := C.GoString(cfg.API.email)
-	token := C.GoString(cfg.API.token)
-
-	clientid, err := s.Validate(C.GoString(cfg.API.URL), email, token, int(cfg.device_id))
+	client := api.NewClient(email, token, timeout)
+	device, err := client.GetDevice(C.GoString(cfg.API.URL), int(cfg.device_id))
 	if err != nil {
 		return C.EKFLOWCONFIG
 	}
 
-	metrics := NewMetrics(clientid)
-	_ = metrics
-	//metrics.Start(C.GoString(cfg.API.URL), email, token)
+	interval := time.Duration(cfg.metrics.interval) * time.Second
+	metrics := NewMetrics(device.ClientID())
+	metrics.Start(C.GoString(cfg.metrics.URL), email, token, interval)
 
-	sender = s
+	agg, err := agg.NewAgg(time.Second, device.MaxFlowRate, &metrics.Metrics)
+	if err != nil {
+		return C.EKFLOWCONFIG
+	}
+
+	sender = NewSender(url, timeout, int(cfg.verbose))
+
+	if err = sender.Start(agg, client, device); err != nil {
+		sender = nil
+		return C.EKFLOWCONFIG
+	}
 
 	return 0
 }
@@ -60,14 +73,12 @@ func kflowSend(cflow *C.kflow) C.int {
 		customs[i].id = (C.uint64_t)(id)
 	}
 
-	msg, err := Pack((*Ckflow)(cflow))
+	kflow, err := Pack(sender.Segment(), (*Ckflow)(cflow))
 	if err != nil {
 		return C.EKFLOWNOMEM
 	}
 
-	if !sender.Send(msg) {
-		return C.EKFLOWSEND
-	}
+	sender.Send(&kflow)
 
 	return 0
 }

@@ -55,10 +55,11 @@ func main() {
 	log.Printf("listening on %s:%d", s.Host, s.Port)
 
 	err = s.Serve(args.Email, args.Token, api.Device{
-		ID:        args.DeviceID,
-		Name:      args.DeviceName,
-		CompanyID: args.CompanyID,
-		Customs:   args.Customs,
+		ID:          args.DeviceID,
+		Name:        args.DeviceName,
+		MaxFlowRate: 4000,
+		CompanyID:   args.CompanyID,
+		Customs:     args.Customs,
 	})
 
 	if err != nil {
