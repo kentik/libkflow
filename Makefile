@@ -39,7 +39,7 @@ $(ARCHIVE): $(ARTIFACTS)
 	@tar czf $@ $(foreach f,$^,-C $(dir $f) $(notdir $f))
 
 $(WORK)/libkflow.a: $(SRC)
-	go build -o $@ -buildmode=c-archive $(MAIN)
+	go build -o $@ -buildmode=c-archive -ldflags="-X main.Version=$(VERSION)" $(MAIN)
 
 $(WORK)/server: $(SRC)
 	go build -o $@ $(MAIN)/cmd/server

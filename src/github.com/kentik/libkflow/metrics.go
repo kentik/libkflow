@@ -56,7 +56,7 @@ func NewMetrics(clientid string) *Metrics {
 
 func (m *Metrics) Start(url, email, token string) {
 	extra := map[string]string{
-		"ver":   "libkflow-0.0.0", // FIXME: proper version
+		"ver":   "libkflow-" + Version,
 		"ft":    "nprobe",
 		"dt":    "libkflow",
 		"level": "primary",
