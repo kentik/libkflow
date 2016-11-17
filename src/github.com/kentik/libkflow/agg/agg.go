@@ -14,6 +14,7 @@ type Agg struct {
 	errors    chan error
 	ticker    *time.Ticker
 	queue     *Queue
+	queued    int64
 	batchSize int
 	msg       *capnp.Message
 	seg       *capnp.Segment
@@ -77,8 +78,8 @@ func (a *Agg) Segment() *capnp.Segment {
 }
 
 func (a *Agg) Add(flow *chf.CHF) {
-	a.metrics.TotalFlowsIn.Mark(1)
 	a.Lock()
+	a.queued++
 	if a.queue.Enqueue(flow) != nil {
 		a.metrics.RateLimitDrops.Mark(1)
 	}
@@ -106,6 +107,8 @@ func (a *Agg) dispatch() {
 	}
 
 	a.Lock()
+	a.metrics.TotalFlowsIn.Mark(a.queued)
+	a.queued = 0
 	flows, count, resampleRateAdj := a.queue.Dequeue(a.batchSize, a.batchSize)
 	a.msg, msg = msg, a.msg
 	a.seg, seg = seg, a.seg
