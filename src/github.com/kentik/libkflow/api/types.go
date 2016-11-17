@@ -16,7 +16,7 @@ type Device struct {
 	Name        string        `json:"device_name"`
 	MaxFlowRate int           `json:"max_flow_rate"`
 	CompanyID   int           `json:"company_id,string"`
-	Customs     CustomColumns `json:"custom_columns"`
+	Customs     CustomColumns `json:"custom_columns,omitempty"`
 }
 
 type CustomColumns map[string]uint64

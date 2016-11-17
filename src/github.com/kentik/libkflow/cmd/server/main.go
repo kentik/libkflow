@@ -6,7 +6,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/kentik/libkflow/api"
-	"github.com/kentik/libkflow/api/server"
+	"github.com/kentik/libkflow/api/test"
 )
 
 type Args struct {
@@ -47,7 +47,7 @@ func main() {
 		}
 	}
 
-	s, err := server.New(args.Host, args.Port)
+	s, err := test.NewServer(args.Host, args.Port)
 	if err != nil {
 		log.Fatal(err)
 	}

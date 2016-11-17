@@ -1,4 +1,4 @@
-package server
+package test
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ type Server struct {
 	listener net.Listener
 }
 
-func New(host string, port int) (*Server, error) {
+func NewServer(host string, port int) (*Server, error) {
 	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
 	if err != nil {
 		return nil, err
@@ -50,6 +50,10 @@ func (s *Server) Serve(email, token string, dev api.Device) error {
 	s.mux.HandleFunc("/api/v5/device/", s.wrap(s.device))
 	s.mux.HandleFunc("/chf", s.wrap(s.flow))
 	return http.Serve(s.listener, s.mux)
+}
+
+func (s *Server) URL() string {
+	return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
 }
 
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {

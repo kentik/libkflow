@@ -47,6 +47,10 @@ $(WORK)/server: $(SRC)
 $(WORK)/demo: $(MAIN)/kflow.h $(CURDIR)/demo.c $(WORK)/libkflow.a
 	$(CC) $(LDFLAGS) -o $@ -I $(<D) $(filter-out $<,$^)
 
+test:
+	@go test -v $(shell go list ./... | grep -v /vendor/)
+
+.PHONY: test
 .SUFFIXES:
 
 VPATH = $(GOPATH)/src
