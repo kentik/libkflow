@@ -114,6 +114,10 @@ func (a *Agg) dispatch() {
 	a.seg, seg = seg, a.seg
 	a.Unlock()
 
+	if count == 0 {
+		return
+	}
+
 	root, err := chf.NewRootPackedCHF(seg)
 	if err != nil {
 		a.error(err)
@@ -128,9 +132,8 @@ func (a *Agg) dispatch() {
 
 	var sampleRate uint32
 	var adjustedSR uint32
-	count = 0
 
-	for _, f := range flows {
+	for i, f := range flows {
 		sampleRate = f.SampleRate()
 		adjustedSR = sampleRate * 100
 
@@ -140,9 +143,8 @@ func (a *Agg) dispatch() {
 
 		f.SetSampleAdj(true)
 		f.SetSampleRate(adjustedSR)
-		msgs.Set(count, *f)
 
-		count++
+		msgs.Set(i, *f)
 	}
 
 	root.SetMsgs(msgs)
