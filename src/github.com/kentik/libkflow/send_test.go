@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io/ioutil"
+	"math/rand"
 	"net/url"
 	"testing"
 	"time"
@@ -8,8 +10,28 @@ import (
 	"github.com/kentik/go-metrics"
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api/test"
+	"github.com/kentik/libkflow/chf"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestSender(t *testing.T) {
+	sender, server, assert := setup(t)
+
+	expected, err := chf.NewCHF(sender.Segment())
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected.SetSrcAs(rand.Uint32())
+	expected.SetDstAs(rand.Uint32())
+
+	sender.Send(&expected)
+	msgs, err := (<-server.Flows()).Msgs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(expected.String(), msgs.At(0).String())
+}
 
 func TestSenderStop(t *testing.T) {
 	sender, _, assert := setup(t)
@@ -26,7 +48,7 @@ func setup(t *testing.T) (*Sender, *test.Server, *assert.Assertions) {
 		RateLimitDrops: metrics.NewMeter(),
 	}
 
-	agg, err := agg.NewAgg(100*time.Millisecond, 10, metrics)
+	agg, err := agg.NewAgg(10*time.Millisecond, 10, metrics)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,9 +58,11 @@ func setup(t *testing.T) (*Sender, *test.Server, *assert.Assertions) {
 		t.Fatal(err)
 	}
 
+	server.Log.SetOutput(ioutil.Discard)
+
 	url, _ := url.Parse(server.URL() + "/chf")
 	sender := NewSender(url, 1*time.Second, 1)
-	sender.Start(agg, client, device)
+	sender.Start(agg, client, device, 1)
 
 	return sender, server, assert.New(t)
 }

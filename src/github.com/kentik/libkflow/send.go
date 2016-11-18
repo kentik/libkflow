@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/kentik/libkflow/agg"
@@ -20,6 +21,7 @@ type Sender struct {
 	Client  *api.Client
 	Verbose int
 	Customs api.CustomColumns
+	workers sync.WaitGroup
 }
 
 func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
@@ -31,7 +33,7 @@ func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
 	}
 }
 
-func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device) error {
+func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n int) error {
 	client.Header.Set("Content-Type", "application/binary")
 
 	q := s.URL.Query()
@@ -42,8 +44,12 @@ func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device) err
 	s.URL.RawQuery = q.Encode()
 	s.Customs = device.Customs
 	s.Client = client
+	s.workers.Add(n)
 
-	go s.dispatch()
+	for i := 0; i < n; i++ {
+		go s.dispatch()
+	}
+	go s.monitor()
 
 	return nil
 }
@@ -71,32 +77,37 @@ func (s *Sender) dispatch() {
 	cid := [80]byte{}
 	url := s.URL.String()
 
+	for msg := range s.Agg.Output() {
+		buf.Reset()
+		buf.Write(cid[:])
+
+		err := capnp.NewPackedEncoder(buf).Encode(msg)
+		if err != nil {
+			// FIXME: check verbosity
+			log.Print("NewPackedEncoder", err)
+			continue
+		}
+
+		err = s.Client.SendFlow(url, buf)
+		if err != nil {
+			// FIXME: check verbosity
+			log.Print("HTTP", err)
+			continue
+		}
+	}
+	s.workers.Done()
+}
+
+func (s *Sender) monitor() {
 	for {
 		select {
-		case msg := <-s.Agg.Output():
-			buf.Reset()
-			buf.Write(cid[:])
-
-			err := capnp.NewPackedEncoder(buf).Encode(msg)
-			if err != nil {
-				// FIXME: check verbosity
-				log.Print("NewPackedEncoder", err)
-				continue
-			}
-
-			err = s.Client.SendFlow(url, buf)
-			if err != nil {
-				// FIXME: check verbosity
-				log.Print("HTTP", err)
-				continue
-			}
 		case err := <-s.Agg.Errors():
 			// FIXME: check verbosity
 			log.Print("agg error", err)
 		case <-s.Agg.Done():
+			s.workers.Wait()
 			s.Exit <- struct{}{}
 			return
 		}
 	}
-
 }

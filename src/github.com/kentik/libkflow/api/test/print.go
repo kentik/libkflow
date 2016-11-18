@@ -1,9 +1,8 @@
 package test
 
 import (
-	"bytes"
 	"fmt"
-	"log"
+	"io"
 	"net"
 	"reflect"
 	"text/tabwriter"
@@ -11,9 +10,8 @@ import (
 	"github.com/kentik/libkflow/chf"
 )
 
-func Print(i int, flow chf.CHF) {
-	buf := bytes.Buffer{}
-	w := tabwriter.NewWriter(&buf, 0, 4, 1, ' ', 0)
+func Print(out io.Writer, i int, flow chf.CHF) {
+	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 
 	fmt.Fprintf(w, "FLOW #%02d\n", i)
 	fmt.Fprintf(w, "  timestampNano:\t%v\n", flow.TimestampNano())
@@ -102,8 +100,6 @@ func Print(i int, flow chf.CHF) {
 	}
 
 	w.Flush()
-
-	log.Output(0, buf.String())
 }
 
 func ip(v interface{}, _ ...error) net.IP {

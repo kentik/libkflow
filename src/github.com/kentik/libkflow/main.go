@@ -44,7 +44,7 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 
 	sender = NewSender(url, timeout, int(cfg.verbose))
 
-	if err = sender.Start(agg, client, device); err != nil {
+	if err = sender.Start(agg, client, device, 2); err != nil {
 		sender = nil
 		return C.EKFLOWCONFIG
 	}

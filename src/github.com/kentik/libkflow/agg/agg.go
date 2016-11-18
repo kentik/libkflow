@@ -93,6 +93,7 @@ func (a *Agg) aggregate() {
 			a.dispatch()
 		case <-a.done:
 			a.dispatch()
+			close(a.output)
 			a.done <- struct{}{}
 			return
 		}

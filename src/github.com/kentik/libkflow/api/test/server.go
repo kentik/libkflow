@@ -1,10 +1,13 @@
 package test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/kentik/libkflow/api"
@@ -18,6 +21,8 @@ type Server struct {
 	Email    string
 	Token    string
 	Device   api.Device
+	Log      *log.Logger
+	flows    chan chf.PackedCHF
 	mux      *http.ServeMux
 	listener net.Listener
 }
@@ -38,6 +43,8 @@ func NewServer(host string, port int) (*Server, error) {
 	return &Server{
 		Host:     addr.IP,
 		Port:     addr.Port,
+		Log:      log.New(os.Stderr, "", log.LstdFlags),
+		flows:    make(chan chf.PackedCHF, 10),
 		mux:      http.NewServeMux(),
 		listener: listener,
 	}, nil
@@ -54,6 +61,10 @@ func (s *Server) Serve(email, token string, dev api.Device) error {
 
 func (s *Server) URL() string {
 	return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
+}
+
+func (s *Server) Flows() <-chan chf.PackedCHF {
+	return s.flows
 }
 
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {
@@ -104,13 +115,20 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 		panic(http.StatusBadRequest)
 	}
 
+	select {
+	case s.flows <- root:
+	default:
+	}
+
 	msgs, err := root.Msgs()
 	if err != nil {
 		panic(http.StatusBadRequest)
 	}
 
 	for i := 0; i < msgs.Len(); i++ {
-		Print(i, msgs.At(i))
+		buf := bytes.Buffer{}
+		Print(&buf, i, msgs.At(i))
+		s.Log.Output(0, buf.String())
 	}
 }
 
