@@ -66,7 +66,7 @@ func kflowSend(cflow *C.kflow) C.int {
 
 	for i, c := range customs {
 		name := C.GoString(c.name)
-		id, ok := sender.Customs[name]
+		id, ok := sender.Device.Customs[name]
 		if !ok {
 			return C.EKFLOWNOCUSTOM
 		}

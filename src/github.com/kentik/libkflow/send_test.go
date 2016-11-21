@@ -33,6 +33,24 @@ func TestSender(t *testing.T) {
 	assert.Equal(expected.String(), msgs.At(0).String())
 }
 
+func TestSenderFields(t *testing.T) {
+	sender, server, assert := setup(t)
+
+	expected, err := chf.NewCHF(sender.Segment())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sender.Send(&expected)
+
+	msgs, err := (<-server.Flows()).Msgs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := msgs.At(0)
+
+	assert.EqualValues(sender.Device.ID, actual.DeviceId())
+}
+
 func TestSenderStop(t *testing.T) {
 	sender, _, assert := setup(t)
 	stopped := sender.Stop(100 * time.Millisecond)

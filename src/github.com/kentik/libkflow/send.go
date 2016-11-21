@@ -20,7 +20,7 @@ type Sender struct {
 	Timeout time.Duration
 	Client  *api.Client
 	Verbose int
-	Customs api.CustomColumns
+	Device  *api.Device
 	workers sync.WaitGroup
 }
 
@@ -42,7 +42,7 @@ func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 
 	s.Agg = agg
 	s.URL.RawQuery = q.Encode()
-	s.Customs = device.Customs
+	s.Device = device
 	s.Client = client
 	s.workers.Add(n)
 
@@ -62,6 +62,7 @@ func (s *Sender) Segment() *capnp.Segment {
 
 func (s *Sender) Send(flow *chf.CHF) {
 	s.debug("sending flow to aggregator")
+	flow.SetDeviceId(uint32(s.Device.ID))
 	s.Agg.Add(flow)
 }
 
