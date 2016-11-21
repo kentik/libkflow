@@ -61,7 +61,7 @@ func setup(t *testing.T) (*Sender, *test.Server, *assert.Assertions) {
 	server.Log.SetOutput(ioutil.Discard)
 
 	url, _ := url.Parse(server.URL() + "/chf")
-	sender := NewSender(url, 1*time.Second, 1)
+	sender := NewSender(url, 1*time.Second, 0)
 	sender.Start(agg, client, device, 1)
 
 	return sender, server, assert.New(t)

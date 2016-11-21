@@ -51,6 +51,8 @@ func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 	}
 	go s.monitor()
 
+	s.debug("sender started with %d workers", n)
+
 	return nil
 }
 
@@ -59,6 +61,7 @@ func (s *Sender) Segment() *capnp.Segment {
 }
 
 func (s *Sender) Send(flow *chf.CHF) {
+	s.debug("sending flow to aggregator")
 	s.Agg.Add(flow)
 }
 
@@ -78,20 +81,20 @@ func (s *Sender) dispatch() {
 	url := s.URL.String()
 
 	for msg := range s.Agg.Output() {
+		s.debug("dispatching aggregated flow")
+
 		buf.Reset()
 		buf.Write(cid[:])
 
 		err := capnp.NewPackedEncoder(buf).Encode(msg)
 		if err != nil {
-			// FIXME: check verbosity
-			log.Print("NewPackedEncoder", err)
+			log.Print(err)
 			continue
 		}
 
 		err = s.Client.SendFlow(url, buf)
 		if err != nil {
-			// FIXME: check verbosity
-			log.Print("HTTP", err)
+			log.Print(err)
 			continue
 		}
 	}
@@ -102,12 +105,18 @@ func (s *Sender) monitor() {
 	for {
 		select {
 		case err := <-s.Agg.Errors():
-			// FIXME: check verbosity
-			log.Print("agg error", err)
+			log.Print(err)
 		case <-s.Agg.Done():
 			s.workers.Wait()
 			s.Exit <- struct{}{}
+			s.debug("sender stopped")
 			return
 		}
+	}
+}
+
+func (s *Sender) debug(fmt string, v ...interface{}) {
+	if s.Verbose > 0 {
+		log.Printf(fmt, v...)
 	}
 }
