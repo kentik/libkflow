@@ -15,6 +15,7 @@ typedef struct {
         int interval;            // metrics flush interval (s)
         char *URL;               // URL of metrics server
     } metrics;
+    char *hostname;              // device hostname
     int device_id;               // device ID
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level
