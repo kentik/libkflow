@@ -34,7 +34,25 @@ typedef struct {
     } value;                     // field value
 } kflowCustom;
 
-// custom value types:
+// kflow custom field names:
+
+#define KFLOWCUSTOM_RETRANSMITTED_IN_PKTS   "RETRANSMITTED_IN_PKTS"
+#define KFLOWCUSTOM_RETRANSMITTED_OUT_PKTS  "RETRANSMITTED_OUT_PKTS"
+#define KFLOWCUSTOM_FRAGMENTS               "FRAGMENTS"
+#define KFLOWCUSTOM_CLIENT_NW_LATENCY_MS    "CLIENT_NW_LATENCY_MS"
+#define KFLOWCUSTOM_SERVER_NW_LATENCY_MS    "SERVER_NW_LATENCY_MS"
+#define KFLOWCUSTOM_APPL_LATENCY_MS         "APPL_LATENCY_MS"
+#define KFLOWCUSTOM_OOORDER_IN_PKTS         "OOORDER_IN_PKTS"
+#define KFLOWCUSTOM_OOORDER_OUT_PKTS        "OOORDER_OUT_PKTS"
+#define KFLOWCUSTOM_HTTP_URL                "KFLOW_HTTP_URL"
+#define KFLOWCUSTOM_HTTP_STATUS             "KFLOW_HTTP_STATUS"
+#define KFLOWCUSTOM_HTTP_UA                 "KFLOW_HTTP_UA"
+#define KFLOWCUSTOM_HTTP_REFERER            "KFLOW_HTTP_REFERER"
+#define KFLOWCUSTOM_DNS_QUERY               "KFLOW_DNS_QUERY"
+#define KFLOWCUSTOM_DNS_QUERY_TYPE          "KFLOW_DNS_QUERY_TYPE"
+#define KFLOWCUSTOM_DNS_RET_CODE            "KFLOW_DNS_RET_CODE"
+
+// kflow custom field value types:
 
 #define KFLOWCUSTOMSTR 1
 #define KFLOWCUSTOMU32 2

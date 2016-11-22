@@ -24,10 +24,10 @@ int main(int argc, char **argv) {
         exit(1);
     };
 
+    char *url = "http://foo.com";
     kflowCustom customs[] = {
-        { .name = "CUSTOM-STR", .vtype = KFLOWCUSTOMSTR, .value.str = &"foo"[0] },
-        { .name = "CUSTOM-U32", .vtype = KFLOWCUSTOMU32, .value.u32 = 42        },
-        { .name = "CUSTOM-F32", .vtype = KFLOWCUSTOMF32, .value.f32 = 3.14      },
+        { .name = KFLOWCUSTOM_HTTP_URL,    .vtype = KFLOWCUSTOMSTR, .value.str = url },
+        { .name = KFLOWCUSTOM_HTTP_STATUS, .vtype = KFLOWCUSTOMU32, .value.u32 = 200 },
     };
     uint32_t numCustoms = sizeof(customs) / sizeof(kflowCustom);
 
