@@ -145,6 +145,12 @@ int kflowSend(kflow *);
 // indicating timeout or failure.
 int kflowStop(int);
 
+// kflowError returns a string describing an error that occurred
+// or NULL if no error occured. It may be called repeatedly to
+// get multiple errors and any non-NULL strings must be freed
+// by the caller.
+char *kflowError();
+
 // kflow error codes:
 
 #define EKFLOWCONFIG   1         // configuration invalid

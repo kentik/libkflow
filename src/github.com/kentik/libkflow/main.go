@@ -13,11 +13,15 @@ import (
 )
 
 var sender *Sender
+var errors chan error
 
 //export kflowInit
 func kflowInit(cfg *C.kflowConfig) C.int {
+	errors = make(chan error, 100)
+
 	url, err := url.Parse(C.GoString(cfg.URL))
 	if err != nil {
+		errors <- err
 		return C.EKFLOWCONFIG
 	}
 
@@ -30,6 +34,7 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 	client := api.NewClient(email, token, timeout)
 	device, err := client.GetDevice(C.GoString(cfg.API.URL), int(cfg.device_id))
 	if err != nil {
+		errors <- err
 		return C.EKFLOWCONFIG
 	}
 
@@ -39,12 +44,15 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 
 	agg, err := agg.NewAgg(time.Second, device.MaxFlowRate, &metrics.Metrics)
 	if err != nil {
+		errors <- err
 		return C.EKFLOWCONFIG
 	}
 
 	sender = NewSender(url, timeout, int(cfg.verbose))
+	sender.Errors = errors
 
 	if err = sender.Start(agg, client, device, 2); err != nil {
+		errors <- err
 		sender = nil
 		return C.EKFLOWCONFIG
 	}
@@ -75,6 +83,7 @@ func kflowSend(cflow *C.kflow) C.int {
 
 	kflow, err := Pack(sender.Segment(), (*Ckflow)(cflow))
 	if err != nil {
+		errors <- err
 		return C.EKFLOWNOMEM
 	}
 
@@ -94,6 +103,16 @@ func kflowStop(msec C.int) C.int {
 		return C.EKFLOWTIMEOUT
 	}
 	return 0
+}
+
+//export kflowError
+func kflowError() *C.char {
+	select {
+	case err := <-errors:
+		return C.CString(err.Error())
+	default:
+		return nil
+	}
 }
 
 func main() {

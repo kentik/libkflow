@@ -3,7 +3,9 @@
 #include "kflow.h"
 
 int main(int argc, char **argv) {
+    char *err;
     int r;
+
     kflowConfig cfg = {
         .URL = "http://127.0.0.1:8999/chf",
         .API = {
@@ -13,7 +15,7 @@ int main(int argc, char **argv) {
         },
         .metrics = {
             .interval = 1,
-            .URL      = "http://127.0.0.1:8889/metrics",
+            .URL      = "http://127.0.0.1:8999/metrics",
         },
         .device_id = 1,
         .verbose   = 1,
@@ -21,7 +23,7 @@ int main(int argc, char **argv) {
 
     if ((r = kflowInit(&cfg)) != 0) {
         printf("error initializing libkflow: %d\n", r);
-        exit(1);
+        goto error;
     };
 
     char *url = "http://foo.com";
@@ -46,13 +48,22 @@ int main(int argc, char **argv) {
 
     if ((r = kflowSend(&flow)) != 0) {
         printf("error sending flow: %d\n", r);
-        exit(1);
+        goto error;
     }
 
     if ((r = kflowStop(10*1000)) != 0) {
         printf("error stopping libkflow: %d\n", r);
-        exit(1);
+        goto error;
     }
 
     return 0;
+
+  error:
+
+    while ((err = kflowError()) != NULL) {
+        printf("libkflow error: %s\n", err);
+        free(err);
+    }
+
+    exit(1);
 }

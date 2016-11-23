@@ -20,6 +20,7 @@ type Sender struct {
 	Timeout time.Duration
 	Client  *api.Client
 	Verbose int
+	Errors  chan error
 	Device  *api.Device
 	workers sync.WaitGroup
 }
@@ -89,13 +90,13 @@ func (s *Sender) dispatch() {
 
 		err := capnp.NewPackedEncoder(buf).Encode(msg)
 		if err != nil {
-			log.Print(err)
+			s.error(err)
 			continue
 		}
 
 		err = s.Client.SendFlow(url, buf)
 		if err != nil {
-			log.Print(err)
+			s.error(err)
 			continue
 		}
 	}
@@ -106,7 +107,7 @@ func (s *Sender) monitor() {
 	for {
 		select {
 		case err := <-s.Agg.Errors():
-			log.Print(err)
+			s.error(err)
 		case <-s.Agg.Done():
 			s.workers.Wait()
 			s.Exit <- struct{}{}
@@ -119,5 +120,12 @@ func (s *Sender) monitor() {
 func (s *Sender) debug(fmt string, v ...interface{}) {
 	if s.Verbose > 0 {
 		log.Printf(fmt, v...)
+	}
+}
+
+func (s *Sender) error(err error) {
+	select {
+	case s.Errors <- err:
+	default:
 	}
 }
