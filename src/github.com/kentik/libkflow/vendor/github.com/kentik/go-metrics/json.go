@@ -8,7 +8,7 @@ import (
 
 // MarshalJSON returns a byte slice containing a JSON representation of all
 // the metrics in the Registry.
-func (r StandardRegistry) MarshalJSON() ([]byte, error) {
+func (r *StandardRegistry) MarshalJSON() ([]byte, error) {
 	data := make(map[string]map[string]interface{})
 	r.Each(func(name string, i interface{}) {
 		values := make(map[string]interface{})
@@ -80,4 +80,8 @@ func WriteJSON(r Registry, d time.Duration, w io.Writer) {
 // io.Writer as JSON.
 func WriteJSONOnce(r Registry, w io.Writer) {
 	json.NewEncoder(w).Encode(r)
+}
+
+func (p *PrefixedRegistry) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.underlying)
 }

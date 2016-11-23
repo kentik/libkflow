@@ -57,8 +57,8 @@
 			"importpath": "github.com/kentik/go-metrics",
 			"repository": "https://github.com/kentik/go-metrics",
 			"vcs": "git",
-			"revision": "d05a8439b0a06f29afb19b74ddb65489a791fc44",
-			"branch": "master",
+			"revision": "133333a1daf7461404453fb4d4b6aa22159fc4d7",
+			"branch": "merge-upstream",
 			"notests": true
 		},
 		{
