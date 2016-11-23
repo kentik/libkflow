@@ -12,6 +12,7 @@ import (
 type Args struct {
 	Host       string            `short:"h"          description:"listen on host"`
 	Port       int               `short:"p"          description:"listen on port"`
+	TLS        bool              `long:"tls"         description:"require TLS   "`
 	Email      string            `long:"email"       description:"API auth email"`
 	Token      string            `long:"token"       description:"API auth token"`
 	CompanyID  int               `long:"company-id"  description:"company ID    "`
@@ -24,6 +25,7 @@ func main() {
 	args := Args{
 		Host:       "127.0.0.1",
 		Port:       8999,
+		TLS:        false,
 		Email:      "test@example.com",
 		Token:      "token",
 		CompanyID:  1,
@@ -59,7 +61,7 @@ func main() {
 		}
 	}
 
-	s, err := test.NewServer(args.Host, args.Port)
+	s, err := test.NewServer(args.Host, args.Port, args.TLS)
 	if err != nil {
 		log.Fatal(err)
 	}

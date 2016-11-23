@@ -2,13 +2,21 @@ package test
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
@@ -27,15 +35,24 @@ type Server struct {
 	listener net.Listener
 }
 
-func NewServer(host string, port int) (*Server, error) {
+func NewServer(host string, port int, tls bool) (*Server, error) {
+	var listener net.Listener
+
 	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
 	if err != nil {
 		return nil, err
 	}
 
-	listener, err := net.ListenTCP("tcp", addr)
+	listener, err = net.ListenTCP("tcp", addr)
 	if err != nil {
 		return nil, err
+	}
+
+	if tls {
+		listener, err = tlslistener(listener, host, addr)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	addr = listener.Addr().(*net.TCPAddr)
@@ -157,6 +174,44 @@ func (s *Server) wrap(f handler) handler {
 
 		f(w, r)
 	}
+}
+
+func tlslistener(tcp net.Listener, host string, addr *net.TCPAddr) (net.Listener, error) {
+	pri, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	pub := &pri.PublicKey
+
+	sn, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber:          sn,
+		Subject:               pkix.Name{Organization: []string{"Kentik"}},
+		IPAddresses:           []net.IP{addr.IP},
+		DNSNames:              []string{host},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	der, err := x509.CreateCertificate(rand.Reader, &template, &template, pub, pri)
+	if err != nil {
+		return nil, err
+	}
+
+	cert := tls.Certificate{
+		Certificate: [][]byte{der},
+		PrivateKey:  pri,
+	}
+
+	cfg := tls.Config{Certificates: []tls.Certificate{cert}}
+	return tls.NewListener(tcp, &cfg), nil
 }
 
 type handler func(http.ResponseWriter, *http.Request)
