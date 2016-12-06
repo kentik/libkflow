@@ -30,8 +30,16 @@ func NewClient(email, token string, timeout time.Duration) *Client {
 	}
 }
 
-func (c *Client) GetDevice(url string, did int) (*Device, error) {
-	r, err := c.do("GET", fmt.Sprintf("%s/device/%d", url, did), nil)
+func (c *Client) GetDeviceByID(url string, did int) (*Device, error) {
+	return c.getdevice(fmt.Sprintf("%s/device/%d", url, did))
+}
+
+func (c *Client) GetDeviceByName(url string, name string) (*Device, error) {
+	return c.getdevice(fmt.Sprintf("%s/device/%s", url, name))
+}
+
+func (c *Client) getdevice(url string) (*Device, error) {
+	r, err := c.do("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

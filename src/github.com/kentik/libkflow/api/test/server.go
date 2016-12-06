@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kentik/libkflow/api"
@@ -85,19 +86,14 @@ func (s *Server) Flows() <-chan chf.PackedCHF {
 }
 
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {
-	var did int
+	id := strings.Split(r.URL.Path, "/")[4]
 
-	n, err := fmt.Sscanf(r.URL.Path, "/api/v5/device/%d", &did)
-	if n != 1 || err != nil {
-		panic(http.StatusBadRequest)
-	}
-
-	if did != s.Device.ID {
+	if id != strconv.Itoa(s.Device.ID) && id != s.Device.Name {
 		panic(http.StatusNotFound)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(&api.DeviceResponse{
+	err := json.NewEncoder(w).Encode(&api.DeviceResponse{
 		Device: s.Device,
 	})
 

@@ -29,10 +29,18 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 		email   = C.GoString(cfg.API.email)
 		token   = C.GoString(cfg.API.token)
 		timeout = time.Duration(cfg.timeout) * time.Millisecond
+		device  *api.Device
 	)
 
 	client := api.NewClient(email, token, timeout)
-	device, err := client.GetDevice(C.GoString(cfg.API.URL), int(cfg.device_id))
+
+	switch url := C.GoString(cfg.API.URL); {
+	case cfg.device_id > 0:
+		device, err = client.GetDeviceByID(url, int(cfg.device_id))
+	case cfg.hostname != nil:
+		device, err = client.GetDeviceByName(url, C.GoString(cfg.hostname))
+	}
+
 	if err != nil {
 		errors <- err
 		return C.EKFLOWCONFIG
