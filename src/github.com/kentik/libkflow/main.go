@@ -3,6 +3,7 @@ package main
 // #include "kflow.h"
 import "C"
 import (
+	"fmt"
 	"net/url"
 	"reflect"
 	"time"
@@ -39,6 +40,8 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 		device, err = client.GetDeviceByID(url, int(cfg.device_id))
 	case cfg.hostname != nil:
 		device, err = client.GetDeviceByName(url, C.GoString(cfg.hostname))
+	default:
+		err = fmt.Errorf("config: missing device selector")
 	}
 
 	if err != nil {
