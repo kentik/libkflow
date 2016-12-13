@@ -2,6 +2,7 @@
 #define KFLOW_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 // struct kflowConfig defines the flow sending configuration.
 typedef struct {
@@ -129,9 +130,12 @@ typedef struct {
 } kflow;
 
 // kflowInit initializes the library and must be called prior
-// to any other functions. It returns 0 on success or an error
-// code on failure.
-int kflowInit(kflowConfig *);
+// to any other functions. If a non-NULL pointer is passed as
+// the second parameter it will be set to an array of
+// kflowCustom structs containing the custom columns supported
+// by the configured device, which must be freed by the caller.
+// kflowInit returns 0 on success or an error code on failure.
+int kflowInit(kflowConfig *, kflowCustom **, uint32_t *);
 
 // kflowSend asynchronously dispatches a kflow record to the
 // server. All fields of the record are copied and may be

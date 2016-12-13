@@ -1,10 +1,8 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
 type DeviceResponse struct {
@@ -12,36 +10,28 @@ type DeviceResponse struct {
 }
 
 type Device struct {
-	ID          int           `json:"id,string"`
-	Name        string        `json:"device_name"`
-	MaxFlowRate int           `json:"max_flow_rate"`
-	CompanyID   int           `json:"company_id,string"`
-	Customs     CustomColumns `json:"custom_columns,omitempty"`
+	ID          int      `json:"id,string"`
+	Name        string   `json:"device_name"`
+	MaxFlowRate int      `json:"max_flow_rate"`
+	CompanyID   int      `json:"company_id,string"`
+	Customs     []Column `json:"custom_column_data,omitempty"`
 }
 
-type CustomColumns map[string]uint64
+type Column struct {
+	ID   uint64 `json:"id,string"`
+	Name string `json:"col_name"`
+	Type string `json:"col_type"`
+}
 
 func (d *Device) ClientID() string {
 	return fmt.Sprintf("%d:%s:%d", d.CompanyID, d.Name, d.ID)
 }
 
-func (c *CustomColumns) UnmarshalJSON(data []byte) error {
-	m := map[string]uint64{}
-	for _, match := range split.FindAllSubmatchIndex(data, -1) {
-		key := string(data[match[2]:match[3]])
-		val := string(data[match[4]:match[5]])
-		m[key], _ = strconv.ParseUint(val, 10, 64)
-	}
-	*c = m
-	return nil
+func (c *Column) UnmarshalFlag(value string) error {
+	return json.Unmarshal([]byte(value), c)
 }
 
-func (c *CustomColumns) MarshalJSON() ([]byte, error) {
-	kvs := make([]string, 0, len(*c))
-	for k, v := range *c {
-		kvs = append(kvs, fmt.Sprintf("%s=%d", k, v))
-	}
-	return []byte(`"` + strings.Join(kvs, ",") + `"`), nil
+func (c Column) MarshalFlag() (string, error) {
+	b, err := json.Marshal(c)
+	return string(b), err
 }
-
-var split = regexp.MustCompile(`([\w-]+)=(\d+),?`)

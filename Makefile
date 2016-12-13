@@ -1,6 +1,8 @@
 MAIN := github.com/kentik/libkflow
 PKGS := $(MAIN) $(MAIN)/api $(MAIN)/chf
 
+CFLAGS  += -std=c99
+
 OS      := $(shell go env GOOS)
 ARCH    := $(shell go env GOARCH)
 TARGET  := $(OS)-$(ARCH)
@@ -45,7 +47,7 @@ $(WORK)/server: $(SRC)
 	go build -o $@ $(MAIN)/cmd/server
 
 $(WORK)/demo: $(MAIN)/kflow.h $(CURDIR)/demo.c $(WORK)/libkflow.a
-	$(CC) $(LDFLAGS) -o $@ -I $(<D) $(filter-out $<,$^)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -I $(<D) $(filter-out $<,$^)
 
 test:
 	@go test -v $(shell go list ./... | grep -v /vendor/)

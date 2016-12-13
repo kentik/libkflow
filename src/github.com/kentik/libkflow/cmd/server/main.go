@@ -10,15 +10,15 @@ import (
 )
 
 type Args struct {
-	Host       string            `short:"h"          description:"listen on host"`
-	Port       int               `short:"p"          description:"listen on port"`
-	TLS        bool              `long:"tls"         description:"require TLS   "`
-	Email      string            `long:"email"       description:"API auth email"`
-	Token      string            `long:"token"       description:"API auth token"`
-	CompanyID  int               `long:"company-id"  description:"company ID    "`
-	DeviceID   int               `long:"device-id"   description:"device ID     "`
-	DeviceName string            `long:"device-name" description:"device name   "`
-	Customs    map[string]uint64 `long:"custom"      description:"custom fields "`
+	Host       string       `short:"h"          description:"listen on host"`
+	Port       int          `short:"p"          description:"listen on port"`
+	TLS        bool         `long:"tls"         description:"require TLS   "`
+	Email      string       `long:"email"       description:"API auth email"`
+	Token      string       `long:"token"       description:"API auth token"`
+	CompanyID  int          `long:"company-id"  description:"company ID    "`
+	DeviceID   int          `long:"device-id"   description:"device ID     "`
+	DeviceName string       `long:"device-name" description:"device name   "`
+	Customs    []api.Column `long:"custom"      description:"custom fields "`
 }
 
 func main() {
@@ -31,22 +31,22 @@ func main() {
 		CompanyID:  1,
 		DeviceID:   1,
 		DeviceName: "dev1",
-		Customs: map[string]uint64{
-			"RETRANSMITTED_IN_PKTS":  1,
-			"RETRANSMITTED_OUT_PKTS": 2,
-			"FRAGMENTS":              3,
-			"CLIENT_NW_LATENCY_MS":   4,
-			"SERVER_NW_LATENCY_MS":   5,
-			"APPL_LATENCY_MS":        6,
-			"OOORDER_IN_PKTS":        7,
-			"OOORDER_OUT_PKTS":       8,
-			"KFLOW_HTTP_URL":         9,
-			"KFLOW_HTTP_STATUS":      10,
-			"KFLOW_HTTP_UA":          11,
-			"KFLOW_HTTP_REFERER":     12,
-			"KFLOW_DNS_QUERY":        13,
-			"KFLOW_DNS_QUERY_TYPE":   14,
-			"KFLOW_DNS_RET_CODE":     15,
+		Customs: []api.Column{
+			{ID: 1, Type: "uint32", Name: "RETRANSMITTED_IN_PKTS"},
+			{ID: 2, Type: "uint32", Name: "RETRANSMITTED_OUT_PKTS"},
+			{ID: 3, Type: "uint32", Name: "FRAGMENTS"},
+			{ID: 4, Type: "uint32", Name: "CLIENT_NW_LATENCY_MS"},
+			{ID: 5, Type: "uint32", Name: "SERVER_NW_LATENCY_MS"},
+			{ID: 6, Type: "uint32", Name: "APPL_LATENCY_MS"},
+			{ID: 7, Type: "uint32", Name: "OOORDER_IN_PKTS"},
+			{ID: 8, Type: "uint32", Name: "OOORDER_OUT_PKTS"},
+			{ID: 9, Type: "string", Name: "KFLOW_HTTP_URL"},
+			{ID: 10, Type: "uint32", Name: "KFLOW_HTTP_STATUS"},
+			{ID: 11, Type: "string", Name: "KFLOW_HTTP_UA"},
+			{ID: 12, Type: "string", Name: "KFLOW_HTTP_REFERER"},
+			{ID: 13, Type: "string", Name: "KFLOW_DNS_QUERY"},
+			{ID: 14, Type: "uint32", Name: "KFLOW_DNS_QUERY_TYPE"},
+			{ID: 15, Type: "uint32", Name: "KFLOW_DNS_RET_CODE"},
 		},
 	}
 

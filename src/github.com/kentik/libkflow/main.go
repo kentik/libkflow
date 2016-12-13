@@ -17,7 +17,7 @@ var sender *Sender
 var errors chan error
 
 //export kflowInit
-func kflowInit(cfg *C.kflowConfig) C.int {
+func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int {
 	errors = make(chan error, 100)
 
 	url, err := url.Parse(C.GoString(cfg.URL))
@@ -49,6 +49,8 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 		return C.EKFLOWCONFIG
 	}
 
+	populateCustoms(device, customs, n)
+
 	interval := time.Duration(cfg.metrics.interval) * time.Second
 	metrics := NewMetrics(device.ClientID())
 	metrics.Start(C.GoString(cfg.metrics.URL), email, token, interval)
@@ -75,21 +77,6 @@ func kflowInit(cfg *C.kflowConfig) C.int {
 func kflowSend(cflow *C.kflow) C.int {
 	if sender == nil {
 		return C.EKFLOWNOINIT
-	}
-
-	customs := *(*[]C.kflowCustom)(unsafe.Pointer(&reflect.SliceHeader{
-		Data: (uintptr)(unsafe.Pointer(cflow.customs)),
-		Len:  int(cflow.numCustoms),
-		Cap:  int(cflow.numCustoms),
-	}))
-
-	for i, c := range customs {
-		name := C.GoString(c.name)
-		id, ok := sender.Device.Customs[name]
-		if !ok {
-			return C.EKFLOWNOCUSTOM
-		}
-		customs[i].id = (C.uint64_t)(id)
 	}
 
 	kflow, err := Pack(sender.Segment(), (*Ckflow)(cflow))
@@ -123,6 +110,40 @@ func kflowError() *C.char {
 		return C.CString(err.Error())
 	default:
 		return nil
+	}
+}
+
+func populateCustoms(device *api.Device, ptr **C.kflowCustom, cnt *C.uint32_t) {
+	if ptr == nil || cnt == nil {
+		return
+	}
+
+	n := len(device.Customs)
+	*ptr = (*C.kflowCustom)(C.calloc(C.size_t(n), C.sizeof_kflowCustom))
+	*cnt = C.uint32_t(n)
+
+	customs := *(*[]C.kflowCustom)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: (uintptr)(unsafe.Pointer(*ptr)),
+		Len:  int(n),
+		Cap:  int(n),
+	}))
+
+	for i, c := range device.Customs {
+		var vtype C.int
+		switch c.Type {
+		case "string":
+			vtype = C.KFLOWCUSTOMSTR
+		case "uint32":
+			vtype = C.KFLOWCUSTOMU32
+		case "float32":
+			vtype = C.KFLOWCUSTOMF32
+		}
+
+		customs[i] = C.kflowCustom{
+			id:    C.uint64_t(c.ID),
+			name:  C.CString(c.Name),
+			vtype: vtype,
+		}
 	}
 }
 

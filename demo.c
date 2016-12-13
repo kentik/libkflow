@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "kflow.h"
 
 int main(int argc, char **argv) {
@@ -20,18 +21,27 @@ int main(int argc, char **argv) {
         .device_id = 1,
         .verbose   = 1,
     };
+    kflowCustom *customs;
+    uint32_t numCustoms;
 
-    if ((r = kflowInit(&cfg)) != 0) {
+    if ((r = kflowInit(&cfg, &customs, &numCustoms)) != 0) {
         printf("error initializing libkflow: %d\n", r);
         goto error;
     };
 
     char *url = "http://foo.com";
-    kflowCustom customs[] = {
-        { .name = KFLOWCUSTOM_HTTP_URL,    .vtype = KFLOWCUSTOMSTR, .value.str = url },
-        { .name = KFLOWCUSTOM_HTTP_STATUS, .vtype = KFLOWCUSTOMU32, .value.u32 = 200 },
-    };
-    uint32_t numCustoms = sizeof(customs) / sizeof(kflowCustom);
+
+    for (uint32_t i = 0; i < numCustoms; i++) {
+        if (!strcmp(customs[i].name, KFLOWCUSTOM_HTTP_URL)) {
+            customs[i].value.str = url;
+        } else if (!strcmp(customs[i].name, KFLOWCUSTOM_HTTP_STATUS)) {
+            customs[i].value.u32 = 200;
+        } else {
+            free(customs[i].name);
+            memcpy(&customs[i], &customs[i+1], sizeof(kflowCustom)*(numCustoms-i));
+            numCustoms--; i--;
+        }
+    }
 
     kflow flow = {
         .deviceId    = cfg.device_id,
