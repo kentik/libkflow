@@ -52,6 +52,7 @@ typedef struct {
 #define KFLOWCUSTOM_DNS_QUERY               "KFLOW_DNS_QUERY"
 #define KFLOWCUSTOM_DNS_QUERY_TYPE          "KFLOW_DNS_QUERY_TYPE"
 #define KFLOWCUSTOM_DNS_RET_CODE            "KFLOW_DNS_RET_CODE"
+#define KFLOWCUSTOM_HTTP_HOST               "KFLOW_HTTP_HOST"
 
 // kflow custom field value types:
 
