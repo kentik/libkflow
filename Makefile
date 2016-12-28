@@ -20,7 +20,7 @@ ARTIFACTS :=           \
 ifeq ($(OS), darwin)
 	LDFLAGS += -framework Security -framework CoreFoundation
 else ifeq ($(OS), linux)
-	LDFLAGS += -lpthread
+	LDFLAGS += -lpthread -fPIC
 endif
 
 file-types = .GoFiles .CgoFiles .HFiles
@@ -52,7 +52,13 @@ $(WORK)/demo: $(MAIN)/kflow.h $(CURDIR)/demo.c $(WORK)/libkflow.a
 test:
 	@go test -v $(shell go list ./... | grep -v /vendor/)
 
+clean:
+	rm -f *.tar.gz
+	rm -rf out/*
+
 .PHONY: test
+.PHONY: clean
+
 .SUFFIXES:
 
 VPATH = $(GOPATH)/src
