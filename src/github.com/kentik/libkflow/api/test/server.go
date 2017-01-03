@@ -74,6 +74,7 @@ func (s *Server) Serve(email, token string, dev api.Device) error {
 	s.Device = dev
 	s.mux.HandleFunc("/api/v5/device/", s.wrap(s.device))
 	s.mux.HandleFunc("/chf", s.wrap(s.flow))
+	s.mux.HandleFunc("/tsdb", s.wrap(s.tsdb))
 	return http.Serve(s.listener, s.mux)
 }
 
@@ -143,6 +144,10 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 		Print(&buf, i, msgs.At(i))
 		s.Log.Output(0, buf.String())
 	}
+}
+
+func (s *Server) tsdb(w http.ResponseWriter, r *http.Request) {
+	// just ignore it
 }
 
 func (s *Server) wrap(f handler) handler {
