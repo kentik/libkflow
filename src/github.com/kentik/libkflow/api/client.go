@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -14,9 +15,16 @@ type Client struct {
 	*http.Client
 }
 
-func NewClient(email, token string, timeout time.Duration) *Client {
+func NewClient(email, token string, timeout time.Duration, proxy *url.URL) *Client {
+	transport := &http.Transport{}
+
 	client := &http.Client{
-		Timeout: timeout,
+		Transport: transport,
+		Timeout:   timeout,
+	}
+
+	if proxy != nil {
+		transport.Proxy = http.ProxyURL(proxy)
 	}
 
 	header := http.Header{

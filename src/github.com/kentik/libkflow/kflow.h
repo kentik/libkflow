@@ -7,15 +7,22 @@
 // struct kflowConfig defines the flow sending configuration.
 typedef struct {
     char *URL;                   // URL of receiving HTTP server
+
     struct {
         char *email;             // Kentik API email address
         char *token;             // Kentik API access token
         char *URL;               // URL of API HTTP server
     } API;
+
     struct {
         int interval;            // metrics flush interval (s)
         char *URL;               // URL of metrics server
     } metrics;
+
+    struct {
+        char *URL;               // optional HTTP proxy URL
+    } proxy;
+
     char *hostname;              // device hostname
     int device_id;               // device ID
     int timeout;                 // flow sending timeout (ms)

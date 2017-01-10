@@ -20,7 +20,7 @@ var errors chan error
 func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int {
 	errors = make(chan error, 100)
 
-	url, err := url.Parse(C.GoString(cfg.URL))
+	flowurl, err := url.Parse(C.GoString(cfg.URL))
 	if err != nil {
 		errors <- err
 		return C.EKFLOWCONFIG
@@ -30,16 +30,25 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		email   = C.GoString(cfg.API.email)
 		token   = C.GoString(cfg.API.token)
 		timeout = time.Duration(cfg.timeout) * time.Millisecond
+		proxy   *url.URL
 		device  *api.Device
 	)
 
-	client := api.NewClient(email, token, timeout)
+	if cfg.proxy.URL != nil {
+		proxy, err = url.Parse(C.GoString(cfg.proxy.URL))
+		if err != nil {
+			errors <- err
+			return C.EKFLOWCONFIG
+		}
+	}
 
-	switch url := C.GoString(cfg.API.URL); {
+	client := api.NewClient(email, token, timeout, proxy)
+
+	switch apiurl := C.GoString(cfg.API.URL); {
 	case cfg.device_id > 0:
-		device, err = client.GetDeviceByID(url, int(cfg.device_id))
+		device, err = client.GetDeviceByID(apiurl, int(cfg.device_id))
 	case cfg.hostname != nil:
-		device, err = client.GetDeviceByName(url, C.GoString(cfg.hostname))
+		device, err = client.GetDeviceByName(apiurl, C.GoString(cfg.hostname))
 	default:
 		err = fmt.Errorf("config: missing device selector")
 	}
@@ -53,7 +62,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 
 	interval := time.Duration(cfg.metrics.interval) * time.Second
 	metrics := NewMetrics(device.ClientID())
-	metrics.Start(C.GoString(cfg.metrics.URL), email, token, interval)
+	metrics.Start(C.GoString(cfg.metrics.URL), email, token, interval, proxy)
 
 	agg, err := agg.NewAgg(time.Second, device.MaxFlowRate, &metrics.Metrics)
 	if err != nil {
@@ -61,7 +70,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		return C.EKFLOWCONFIG
 	}
 
-	sender = NewSender(url, timeout, int(cfg.verbose))
+	sender = NewSender(flowurl, timeout, int(cfg.verbose))
 	sender.Errors = errors
 
 	if err = sender.Start(agg, client, device, 2); err != nil {

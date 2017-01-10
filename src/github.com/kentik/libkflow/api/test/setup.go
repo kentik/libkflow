@@ -20,7 +20,7 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 		}
 	)
 
-	client := api.NewClient(email, token, 1*time.Second)
+	client := api.NewClient(email, token, 1*time.Second, nil)
 
 	server, err := NewServer("127.0.0.1", 0, false)
 	if err != nil {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"net/url"
 	"strings"
 	"time"
 
@@ -43,12 +43,17 @@ func NewMetrics(clientid string) *Metrics {
 	}
 }
 
-func (m *Metrics) Start(url, email, token string, interval time.Duration) {
+func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy *url.URL) {
 	extra := map[string]string{
 		"ver":   "libkflow-" + Version,
 		"ft":    "nprobe",
 		"dt":    "libkflow",
 		"level": "primary",
+	}
+
+	proxyURL := ""
+	if proxy != nil {
+		proxyURL = proxy.String()
 	}
 
 	go httptsdb.OpenTSDBWithConfig(httptsdb.OpenTSDBConfig{
@@ -59,7 +64,7 @@ func (m *Metrics) Start(url, email, token string, interval time.Duration) {
 		Prefix:             "chf",
 		Debug:              false,
 		Send:               make(chan []byte, MaxHttpRequests),
-		ProxyUrl:           os.Getenv("CH_HTTP_LOCAL_PROXY"),
+		ProxyUrl:           proxyURL,
 		MaxHttpOutstanding: MaxHttpRequests,
 		Extra:              extra,
 		ApiEmail:           &email,
