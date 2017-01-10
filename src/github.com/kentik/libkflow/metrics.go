@@ -35,7 +35,7 @@ func NewMetrics(clientid string) *Metrics {
 	return &Metrics{
 		agg.Metrics{
 			TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), nil),
-			TotalFlowsOut:  metrics.GetOrRegisterMeter(name("TotalFlowsOut"), nil),
+			TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), nil),
 			OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
 			NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), nil, sample()),
 			RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), nil),
