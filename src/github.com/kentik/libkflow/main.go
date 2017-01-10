@@ -22,7 +22,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 
 	flowurl, err := url.Parse(C.GoString(cfg.URL))
 	if err != nil {
-		errors <- err
+		fail("invalid flow URL: %s", err)
 		return C.EKFLOWCONFIG
 	}
 
@@ -37,7 +37,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	if cfg.proxy.URL != nil {
 		proxy, err = url.Parse(C.GoString(cfg.proxy.URL))
 		if err != nil {
-			errors <- err
+			fail("invalid proxy URL: %s", err)
 			return C.EKFLOWCONFIG
 		}
 	}
@@ -54,7 +54,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	}
 
 	if err != nil {
-		errors <- err
+		fail("device lookup error: %s", err)
 		return C.EKFLOWCONFIG
 	}
 
@@ -66,7 +66,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 
 	agg, err := agg.NewAgg(time.Second, device.MaxFlowRate, &metrics.Metrics)
 	if err != nil {
-		errors <- err
+		fail("agg setup error: %s", err)
 		return C.EKFLOWCONFIG
 	}
 
@@ -74,7 +74,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	sender.Errors = errors
 
 	if err = sender.Start(agg, client, device, 2); err != nil {
-		errors <- err
+		fail("send startup error: %s", err)
 		sender = nil
 		return C.EKFLOWCONFIG
 	}
@@ -154,6 +154,10 @@ func populateCustoms(device *api.Device, ptr **C.kflowCustom, cnt *C.uint32_t) {
 			vtype: vtype,
 		}
 	}
+}
+
+func fail(format string, args ...interface{}) {
+	errors <- fmt.Errorf(format, args...)
 }
 
 func main() {
