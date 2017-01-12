@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
             customs[i].value.u32 = 200;
         } else {
             free(customs[i].name);
-            memcpy(&customs[i], &customs[i+1], sizeof(kflowCustom)*(numCustoms-i-1));
+            memmove(&customs[i], &customs[i+1], sizeof(kflowCustom)*(numCustoms-i-1));
             numCustoms--; i--;
         }
     }

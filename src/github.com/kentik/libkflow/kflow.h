@@ -30,10 +30,12 @@ typedef struct {
 } kflowConfig;
 
 // struct kflowCustom defines a custom flow field which may
-// contain a string, uint32, or float32 value.
+// contain a string, uint32, or float32 value. New kflowCustom
+// structs should be initialized as copies of the structs
+// populated by kflowInit(...).
 typedef struct {
     char *name;                  // field name
-    uint64_t id;                 // IGNORE
+    uint64_t id;                 // field ID
     int vtype;                   // value type
     union {
         char *str;               // string value

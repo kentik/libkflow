@@ -18,7 +18,7 @@ type Device struct {
 }
 
 type Column struct {
-	ID   uint64 `json:"id,string"`
+	ID   uint64 `json:"field_id,string"`
 	Name string `json:"col_name"`
 	Type string `json:"col_type"`
 }
