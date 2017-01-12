@@ -47,6 +47,7 @@ func main() {
 			{ID: 13, Type: "string", Name: "KFLOW_DNS_QUERY"},
 			{ID: 14, Type: "uint32", Name: "KFLOW_DNS_QUERY_TYPE"},
 			{ID: 15, Type: "uint32", Name: "KFLOW_DNS_RET_CODE"},
+			{ID: 16, Type: "string", Name: "KFLOW_DNS_RESPONSE"},
 		},
 	}
 
