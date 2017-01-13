@@ -44,10 +44,11 @@ func main() {
 			{ID: 10, Type: "uint32", Name: "KFLOW_HTTP_STATUS"},
 			{ID: 11, Type: "string", Name: "KFLOW_HTTP_UA"},
 			{ID: 12, Type: "string", Name: "KFLOW_HTTP_REFERER"},
-			{ID: 13, Type: "string", Name: "KFLOW_DNS_QUERY"},
-			{ID: 14, Type: "uint32", Name: "KFLOW_DNS_QUERY_TYPE"},
-			{ID: 15, Type: "uint32", Name: "KFLOW_DNS_RET_CODE"},
-			{ID: 16, Type: "string", Name: "KFLOW_DNS_RESPONSE"},
+			{ID: 13, Type: "string", Name: "KFLOW_HTTP_HOST"},
+			{ID: 14, Type: "string", Name: "KFLOW_DNS_QUERY"},
+			{ID: 15, Type: "uint32", Name: "KFLOW_DNS_QUERY_TYPE"},
+			{ID: 16, Type: "uint32", Name: "KFLOW_DNS_RET_CODE"},
+			{ID: 17, Type: "string", Name: "KFLOW_DNS_RESPONSE"},
 		},
 	}
 
