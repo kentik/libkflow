@@ -5,7 +5,9 @@ import "C"
 import (
 	"fmt"
 	"net/url"
+	"os/signal"
 	"reflect"
+	"syscall"
 	"time"
 	"unsafe"
 
@@ -78,6 +80,8 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		sender = nil
 		return C.EKFLOWCONFIG
 	}
+
+	signal.Ignore(syscall.SIGPIPE)
 
 	return 0
 }
