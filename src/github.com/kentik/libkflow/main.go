@@ -126,6 +126,11 @@ func kflowError() *C.char {
 	}
 }
 
+//export kflowVersion
+func kflowVersion() *C.char {
+	return C.CString(Version)
+}
+
 func populateCustoms(device *api.Device, ptr **C.kflowCustom, cnt *C.uint32_t) {
 	if ptr == nil || cnt == nil {
 		return

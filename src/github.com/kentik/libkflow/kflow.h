@@ -166,6 +166,10 @@ int kflowStop(int);
 // by the caller.
 char *kflowError();
 
+// kflowVersion returns a string describing the library version
+// which must be freed by the caller.
+char *kflowVersion();
+
 // kflow error codes:
 
 #define EKFLOWCONFIG   1         // configuration invalid
