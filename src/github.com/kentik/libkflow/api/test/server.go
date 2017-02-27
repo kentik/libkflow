@@ -72,7 +72,7 @@ func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
 		Port:     addr.Port,
 		Log:      log.New(os.Stderr, "", log.LstdFlags),
 		quiet:    quiet,
-		flows:    make(chan chf.PackedCHF, 10),
+		flows:    make(chan chf.PackedCHF, 100),
 		mux:      http.NewServeMux(),
 		listener: listener,
 	}, nil

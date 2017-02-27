@@ -15,8 +15,8 @@ import (
 func TestAggSimple(t *testing.T) {
 	var (
 		interval  = 100 * time.Millisecond
-		fps       = 10
-		count     = 10
+		fps       = 100
+		count     = fps / int(time.Second/interval)
 		s, assert = setup(t, interval, fps)
 	)
 
@@ -38,10 +38,11 @@ func TestAggSimple(t *testing.T) {
 func TestAggDrop(t *testing.T) {
 	var (
 		interval  = 100 * time.Millisecond
-		fps       = 10
-		expect    = MaxFlowBuffer * fps
-		count     = expect * 2
-		dropped   = count - expect
+		fps       = 100
+		buffer    = fps * MaxFlowBuffer
+		expect    = fps / int(time.Second/interval)
+		dropped   = 200
+		count     = buffer/int(time.Second/interval) + dropped
 		s, assert = setup(t, interval, fps)
 	)
 

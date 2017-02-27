@@ -35,15 +35,17 @@ func NewAgg(interval time.Duration, fps int, metrics *Metrics) (*Agg, error) {
 		return nil, err
 	}
 
-	batchSize := int((float32(fps) / 1000.0) * float32(interval))
+	intervalMS := float32(interval / time.Millisecond)
+	batchSize := (float32(fps) / 1000.0) * intervalMS
+	buffer := (float32(MaxFlowBuffer*fps) / 1000.0) * intervalMS
 
 	a := &Agg{
 		output:    make(chan *capnp.Message),
 		done:      make(chan struct{}),
 		errors:    make(chan error, 100),
 		ticker:    time.NewTicker(interval),
-		queue:     New(MaxFlowBuffer * fps),
-		batchSize: batchSize,
+		queue:     New(int(buffer)),
+		batchSize: int(batchSize),
 		msg:       msg,
 		seg:       seg,
 		metrics:   metrics,

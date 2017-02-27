@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/url"
@@ -25,11 +26,11 @@ func TestSender(t *testing.T) {
 	expected.SetDstAs(rand.Uint32())
 
 	sender.Send(&expected)
-	msgs, err := (<-server.Flows()).Msgs()
+
+	msgs, err := receive(server)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	assert.Equal(expected.String(), msgs.At(0).String())
 }
 
@@ -42,12 +43,12 @@ func TestSenderFields(t *testing.T) {
 	}
 	sender.Send(&expected)
 
-	msgs, err := (<-server.Flows()).Msgs()
+	msgs, err := receive(server)
 	if err != nil {
 		t.Fatal(err)
 	}
-	actual := msgs.At(0)
 
+	actual := msgs.At(0)
 	assert.EqualValues(sender.Device.ID, actual.DeviceId())
 }
 
@@ -66,7 +67,7 @@ func setup(t *testing.T) (*Sender, *test.Server, *assert.Assertions) {
 		RateLimitDrops: metrics.NewMeter(),
 	}
 
-	agg, err := agg.NewAgg(10*time.Millisecond, 10, metrics)
+	agg, err := agg.NewAgg(10*time.Millisecond, 100, metrics)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,4 +84,15 @@ func setup(t *testing.T) (*Sender, *test.Server, *assert.Assertions) {
 	sender.Start(agg, client, device, 1)
 
 	return sender, server, assert.New(t)
+}
+
+func receive(s *test.Server) (*chf.CHF_List, error) {
+	interval := 100 * time.Millisecond
+	select {
+	case flow := <-s.Flows():
+		msgs, err := flow.Msgs()
+		return &msgs, err
+	case <-time.After(interval):
+		return nil, fmt.Errorf("failed to receive flow within %s", interval)
+	}
 }
