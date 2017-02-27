@@ -62,7 +62,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 
 	populateCustoms(device, customs, n)
 
-	interval := time.Duration(cfg.metrics.interval) * time.Second
+	interval := time.Duration(cfg.metrics.interval) * time.Minute
 	metrics := NewMetrics(device.ClientID())
 	metrics.Start(C.GoString(cfg.metrics.URL), email, token, interval, proxy)
 

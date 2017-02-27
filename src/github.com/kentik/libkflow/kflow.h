@@ -15,7 +15,7 @@ typedef struct {
     } API;
 
     struct {
-        int interval;            // metrics flush interval (s)
+        int interval;            // metrics flush interval (m)
         char *URL;               // URL of metrics server
     } metrics;
 
