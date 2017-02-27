@@ -10,15 +10,16 @@ import (
 )
 
 type Args struct {
-	Host       string       `short:"h"          description:"listen on host"`
-	Port       int          `short:"p"          description:"listen on port"`
-	TLS        bool         `long:"tls"         description:"require TLS   "`
-	Email      string       `long:"email"       description:"API auth email"`
-	Token      string       `long:"token"       description:"API auth token"`
-	CompanyID  int          `long:"company-id"  description:"company ID    "`
-	DeviceID   int          `long:"device-id"   description:"device ID     "`
-	DeviceName string       `long:"device-name" description:"device name   "`
-	Customs    []api.Column `long:"custom"      description:"custom fields "`
+	Host       string       `short:"h"          description:"listen on host "`
+	Port       int          `short:"p"          description:"listen on port "`
+	TLS        bool         `long:"tls"         description:"require TLS    "`
+	Quiet      bool         `long:"quiet"       description:"minimize output"`
+	Email      string       `long:"email"       description:"API auth email "`
+	Token      string       `long:"token"       description:"API auth token "`
+	CompanyID  int          `long:"company-id"  description:"company ID     "`
+	DeviceID   int          `long:"device-id"   description:"device ID      "`
+	DeviceName string       `long:"device-name" description:"device name    "`
+	Customs    []api.Column `long:"custom"      description:"custom fields  "`
 }
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 		Host:       "127.0.0.1",
 		Port:       8999,
 		TLS:        false,
+		Quiet:      false,
 		Email:      "test@example.com",
 		Token:      "token",
 		CompanyID:  1,
@@ -63,7 +65,7 @@ func main() {
 		}
 	}
 
-	s, err := test.NewServer(args.Host, args.Port, args.TLS)
+	s, err := test.NewServer(args.Host, args.Port, args.TLS, args.Quiet)
 	if err != nil {
 		log.Fatal(err)
 	}

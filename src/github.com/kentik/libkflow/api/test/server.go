@@ -17,10 +17,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
+	"github.com/robfig/cron"
 	"zombiezen.com/go/capnproto2"
 )
 
@@ -31,12 +33,19 @@ type Server struct {
 	Token    string
 	Device   api.Device
 	Log      *log.Logger
+	quiet    bool
 	flows    chan chf.PackedCHF
 	mux      *http.ServeMux
 	listener net.Listener
 }
 
-func NewServer(host string, port int, tls bool) (*Server, error) {
+var (
+	flowCounter   uint64
+	packetCounter uint64
+	byteCounter   uint64
+)
+
+func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
 	var listener net.Listener
 
 	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
@@ -62,6 +71,7 @@ func NewServer(host string, port int, tls bool) (*Server, error) {
 		Host:     addr.IP,
 		Port:     addr.Port,
 		Log:      log.New(os.Stderr, "", log.LstdFlags),
+		quiet:    quiet,
 		flows:    make(chan chf.PackedCHF, 10),
 		mux:      http.NewServeMux(),
 		listener: listener,
@@ -72,9 +82,20 @@ func (s *Server) Serve(email, token string, dev api.Device) error {
 	s.Email = email
 	s.Token = token
 	s.Device = dev
+
 	s.mux.HandleFunc("/api/v5/device/", s.wrap(s.device))
 	s.mux.HandleFunc("/chf", s.wrap(s.flow))
 	s.mux.HandleFunc("/tsdb", s.wrap(s.tsdb))
+
+	c := cron.New()
+	c.AddFunc("* * * * * *", func() {
+		flows := atomic.SwapUint64(&flowCounter, 0)
+		packets := atomic.SwapUint64(&packetCounter, 0)
+		bytes := atomic.SwapUint64(&byteCounter, 0)
+		s.Log.Printf("flows: %12d, packets: %12d, bytes: %12d", flows, packets, bytes)
+	})
+	c.Start()
+
 	return http.Serve(s.listener, s.mux)
 }
 
@@ -139,11 +160,27 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 		panic(http.StatusBadRequest)
 	}
 
+	var (
+		packetctr uint64
+		bytectr   uint64
+	)
+
 	for i := 0; i < msgs.Len(); i++ {
-		buf := bytes.Buffer{}
-		Print(&buf, i, msgs.At(i))
-		s.Log.Output(0, buf.String())
+		msg := msgs.At(i)
+
+		packetctr += msg.InPkts() + msg.OutPkts()
+		bytectr += msg.InBytes() + msg.OutBytes()
+
+		if !s.quiet {
+			buf := bytes.Buffer{}
+			Print(&buf, i, msg)
+			s.Log.Output(0, buf.String())
+		}
 	}
+
+	atomic.AddUint64(&flowCounter, uint64(msgs.Len()))
+	atomic.AddUint64(&packetCounter, packetctr)
+	atomic.AddUint64(&byteCounter, bytectr)
 }
 
 func (s *Server) tsdb(w http.ResponseWriter, r *http.Request) {

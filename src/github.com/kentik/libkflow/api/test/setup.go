@@ -22,7 +22,7 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 
 	client := api.NewClient(email, token, 1*time.Second, nil)
 
-	server, err := NewServer("127.0.0.1", 0, false)
+	server, err := NewServer("127.0.0.1", 0, false, true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
