@@ -44,13 +44,24 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		}
 	}
 
-	client := api.NewClient(email, token, timeout, proxy)
+	apiurl, err := url.Parse(C.GoString(cfg.API.URL))
+	if err != nil {
+		fail("invalid API URL: %s", err)
+	}
 
-	switch apiurl := C.GoString(cfg.API.URL); {
+	client := api.NewClient(api.ClientConfig{
+		Email:   email,
+		Token:   token,
+		Timeout: timeout,
+		API:     apiurl,
+		Proxy:   proxy,
+	})
+
+	switch {
 	case cfg.device_id > 0:
-		device, err = client.GetDeviceByID(apiurl, int(cfg.device_id))
+		device, err = client.GetDeviceByID(int(cfg.device_id))
 	case cfg.hostname != nil:
-		device, err = client.GetDeviceByName(apiurl, C.GoString(cfg.hostname))
+		device, err = client.GetDeviceByName(C.GoString(cfg.hostname))
 	default:
 		err = fmt.Errorf("config: missing device selector")
 	}

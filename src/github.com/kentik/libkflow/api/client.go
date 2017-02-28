@@ -11,39 +11,49 @@ import (
 )
 
 type Client struct {
-	Header http.Header
+	Header    http.Header
+	deviceURL string
 	*http.Client
 }
 
-func NewClient(email, token string, timeout time.Duration, proxy *url.URL) *Client {
+type ClientConfig struct {
+	Email   string
+	Token   string
+	Timeout time.Duration
+	API     *url.URL
+	Proxy   *url.URL
+}
+
+func NewClient(config ClientConfig) *Client {
 	transport := &http.Transport{}
 
 	client := &http.Client{
 		Transport: transport,
-		Timeout:   timeout,
+		Timeout:   config.Timeout,
 	}
 
-	if proxy != nil {
-		transport.Proxy = http.ProxyURL(proxy)
+	if config.Proxy != nil {
+		transport.Proxy = http.ProxyURL(config.Proxy)
 	}
 
 	header := http.Header{
-		"X-CH-Auth-Email":     {email},
-		"X-CH-Auth-API-Token": {token},
+		"X-CH-Auth-Email":     {config.Email},
+		"X-CH-Auth-API-Token": {config.Token},
 	}
 
 	return &Client{
-		Header: header,
-		Client: client,
+		Header:    header,
+		deviceURL: config.API.String() + "/device/%v",
+		Client:    client,
 	}
 }
 
-func (c *Client) GetDeviceByID(url string, did int) (*Device, error) {
-	return c.getdevice(fmt.Sprintf("%s/device/%d", url, did))
+func (c *Client) GetDeviceByID(did int) (*Device, error) {
+	return c.getdevice(fmt.Sprintf(c.deviceURL, did))
 }
 
-func (c *Client) GetDeviceByName(url string, name string) (*Device, error) {
-	return c.getdevice(fmt.Sprintf("%s/device/%s", url, name))
+func (c *Client) GetDeviceByName(name string) (*Device, error) {
+	return c.getdevice(fmt.Sprintf(c.deviceURL, name))
 }
 
 func (c *Client) getdevice(url string) (*Device, error) {
@@ -54,7 +64,7 @@ func (c *Client) getdevice(url string) (*Device, error) {
 	defer r.Body.Close()
 
 	if r.StatusCode != 200 {
-		return nil, fmt.Errorf("api: HTTP status code %d", r.StatusCode)
+		return nil, &Error{StatusCode: r.StatusCode}
 	}
 
 	dr := &DeviceResponse{}
