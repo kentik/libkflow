@@ -19,6 +19,7 @@ type Args struct {
 	CompanyID  int          `long:"company-id"  description:"company ID     "`
 	DeviceID   int          `long:"device-id"   description:"device ID      "`
 	DeviceName string       `long:"device-name" description:"device name    "`
+	MaxFPS     int          `long:"max-fps"     description:"max flows/sec  "`
 	Customs    []api.Column `long:"custom"      description:"custom fields  "`
 }
 
@@ -33,6 +34,7 @@ func main() {
 		CompanyID:  1,
 		DeviceID:   1,
 		DeviceName: "dev1",
+		MaxFPS:     4000,
 		Customs: []api.Column{
 			{ID: 1, Type: "uint32", Name: "RETRANSMITTED_IN_PKTS"},
 			{ID: 2, Type: "uint32", Name: "RETRANSMITTED_OUT_PKTS"},
@@ -75,7 +77,7 @@ func main() {
 	err = s.Serve(args.Email, args.Token, api.Device{
 		ID:          args.DeviceID,
 		Name:        args.DeviceName,
-		MaxFlowRate: 4000,
+		MaxFlowRate: args.MaxFPS,
 		CompanyID:   args.CompanyID,
 		Customs:     args.Customs,
 	})

@@ -22,6 +22,7 @@ type Sender struct {
 	Verbose int
 	Errors  chan error
 	Device  *api.Device
+	Update  *time.Ticker
 	workers sync.WaitGroup
 }
 
@@ -31,6 +32,7 @@ func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
 		URL:     url,
 		Timeout: timeout,
 		Verbose: verbose,
+		Update:  time.NewTicker(20 * time.Minute),
 	}
 }
 
@@ -51,6 +53,7 @@ func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 		go s.dispatch()
 	}
 	go s.monitor()
+	go s.update()
 
 	s.debug("sender started with %d workers", n)
 
@@ -110,9 +113,32 @@ func (s *Sender) monitor() {
 			s.error(err)
 		case <-s.Agg.Done():
 			s.workers.Wait()
+			s.Update.Stop()
 			s.Exit <- struct{}{}
 			s.debug("sender stopped")
 			return
+		}
+	}
+}
+
+func (s *Sender) update() {
+	for range s.Update.C {
+		var fps int
+
+		switch updated, err := s.Client.GetDeviceByID(s.Device.ID); {
+		case err == nil:
+			fps = updated.MaxFlowRate
+		case api.IsErrorWithStatusCode(err, 404):
+			fps = 0
+		default:
+			s.debug("device API request failed: %s", err)
+			continue
+		}
+
+		if s.Device.MaxFlowRate != fps {
+			s.debug("updating max FPS to %d", fps)
+			s.Agg.Configure(fps)
+			s.Device.MaxFlowRate = fps
 		}
 	}
 }

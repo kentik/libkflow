@@ -12,6 +12,7 @@ type Agg struct {
 	output    chan *capnp.Message
 	done      chan struct{}
 	errors    chan error
+	interval  time.Duration
 	ticker    *time.Ticker
 	queue     *Queue
 	queued    int64
@@ -35,25 +36,34 @@ func NewAgg(interval time.Duration, fps int, metrics *Metrics) (*Agg, error) {
 		return nil, err
 	}
 
-	intervalMS := float32(interval / time.Millisecond)
-	batchSize := (float32(fps) / 1000.0) * intervalMS
-	buffer := (float32(MaxFlowBuffer*fps) / 1000.0) * intervalMS
-
 	a := &Agg{
-		output:    make(chan *capnp.Message),
-		done:      make(chan struct{}),
-		errors:    make(chan error, 100),
-		ticker:    time.NewTicker(interval),
-		queue:     New(int(buffer)),
-		batchSize: int(batchSize),
-		msg:       msg,
-		seg:       seg,
-		metrics:   metrics,
+		output:   make(chan *capnp.Message),
+		done:     make(chan struct{}),
+		errors:   make(chan error, 100),
+		interval: interval,
+		ticker:   time.NewTicker(interval),
+		msg:      msg,
+		seg:      seg,
+		metrics:  metrics,
 	}
 
+	a.Configure(fps)
 	go a.aggregate()
 
 	return a, nil
+}
+
+func (a *Agg) Configure(fps int) {
+	var (
+		interval_ms = float32(a.interval / time.Millisecond)
+		batchSize   = (float32(fps) / 1000.0) * interval_ms
+		buffer      = (float32(MaxFlowBuffer*fps) / 1000.0) * interval_ms
+	)
+
+	a.Lock()
+	a.queue = New(int(buffer))
+	a.batchSize = int(batchSize)
+	a.Unlock()
 }
 
 func (a *Agg) Stop() {
