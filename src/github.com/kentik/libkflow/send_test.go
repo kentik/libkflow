@@ -58,7 +58,24 @@ func TestSenderStop(t *testing.T) {
 	assert.True(stopped)
 }
 
-func setup(t *testing.T) (*Sender, *test.Server, *assert.Assertions) {
+func BenchmarkSenderSend(b *testing.B) {
+	sender, _, _ := setup(b)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		flow, err := chf.NewCHF(sender.Segment())
+		if err != nil {
+			b.Fatal(err)
+		}
+		flow.SetSrcAs(uint32(b.N))
+		flow.SetDstAs(uint32(b.N))
+		sender.Send(&flow)
+	}
+}
+
+func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
 	metrics := &agg.Metrics{
 		TotalFlowsIn:   metrics.NewMeter(),
 		TotalFlowsOut:  metrics.NewMeter(),
