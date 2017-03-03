@@ -3,7 +3,7 @@ package agg
 import (
 	"fmt"
 
-	"github.com/kentik/libkflow/chf"
+	"github.com/kentik/libkflow/flow"
 )
 
 /**
@@ -14,15 +14,17 @@ const minQueueLen = 1028
 
 // Queue represents a single instance of the queue data structure.
 type Queue struct {
-	buf                             []*chf.CHF
+	buf                             []flow.Flow
 	head, tail, count, max, dropped int
+	error                           error
 }
 
 // New constructs and returns a new Queue.
 func New(max int) *Queue {
 	return &Queue{
-		buf: make([]*chf.CHF, minQueueLen),
-		max: max,
+		buf:   make([]flow.Flow, minQueueLen),
+		max:   max,
+		error: fmt.Errorf("Max q depth exceeded: %d", max),
 	}
 }
 
@@ -34,7 +36,7 @@ func (q *Queue) Length() int {
 // resizes the queue to fit exactly twice its current contents
 // this can result in shrinking if the queue is less than half-full
 func (q *Queue) resize() {
-	newBuf := make([]*chf.CHF, q.count*2)
+	newBuf := make([]flow.Flow, q.count*2)
 
 	if q.tail > q.head {
 		copy(newBuf, q.buf[q.head:q.tail])
@@ -49,25 +51,25 @@ func (q *Queue) resize() {
 }
 
 // Add puts an element on the end of the queue.
-func (q *Queue) Enqueue(elem *chf.CHF) error {
+func (q *Queue) Enqueue(elem *flow.Flow) error {
 
 	if q.count >= q.max {
 		q.dropped++
-		return fmt.Errorf("Max q depth exceeeded: %d", q.max)
+		return q.error
 	}
 
 	if q.count == len(q.buf) {
 		q.resize()
 	}
 
-	q.buf[q.tail] = elem
+	q.buf[q.tail] = *elem
 	q.tail = (q.tail + 1) % len(q.buf)
 	q.count++
 	return nil
 }
 
 // Returns oldest i elements in q. if len < i, returns len
-func (q *Queue) Dequeue(i int, overflow int) ([]*chf.CHF, int, float32) {
+func (q *Queue) Dequeue(i int, overflow int) ([]flow.Flow, int, float32) {
 
 	get := i
 
@@ -87,8 +89,8 @@ func (q *Queue) Dequeue(i int, overflow int) ([]*chf.CHF, int, float32) {
 	}
 
 	qLen := len(q.buf)
-	res := make([]*chf.CHF, get)
-	nilSlice := make([]*chf.CHF, get)
+	res := make([]flow.Flow, get)
+	nilSlice := make([]flow.Flow, get)
 
 	if q.head+get < qLen {
 		copy(res, q.buf[q.head:q.head+get])

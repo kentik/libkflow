@@ -9,7 +9,7 @@ import (
 
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
-	"github.com/kentik/libkflow/chf"
+	"github.com/kentik/libkflow/flow"
 	"zombiezen.com/go/capnproto2"
 )
 
@@ -60,13 +60,9 @@ func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 	return nil
 }
 
-func (s *Sender) Segment() *capnp.Segment {
-	return s.Agg.Segment()
-}
-
-func (s *Sender) Send(flow *chf.CHF) {
+func (s *Sender) Send(flow *flow.Flow) {
 	s.debug("sending flow to aggregator")
-	flow.SetDeviceId(uint32(s.Device.ID))
+	flow.DeviceId = uint32(s.Device.ID)
 	s.Agg.Add(flow)
 }
 

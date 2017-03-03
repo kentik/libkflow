@@ -13,6 +13,7 @@ import (
 
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
+	"github.com/kentik/libkflow/flow"
 )
 
 var sender *Sender
@@ -103,13 +104,9 @@ func kflowSend(cflow *C.kflow) C.int {
 		return C.EKFLOWNOINIT
 	}
 
-	kflow, err := Pack(sender.Segment(), (*Ckflow)(cflow))
-	if err != nil {
-		errors <- err
-		return C.EKFLOWNOMEM
-	}
-
-	sender.Send(&kflow)
+	ckflow := (*flow.Ckflow)(unsafe.Pointer(cflow))
+	flow := flow.New(ckflow)
+	sender.Send(&flow)
 
 	return 0
 }

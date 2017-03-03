@@ -173,7 +173,7 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 
 		if !s.quiet {
 			buf := bytes.Buffer{}
-			Print(&buf, i, msg)
+			Print(&buf, i, msg, s.Device)
 			s.Log.Output(0, buf.String())
 		}
 	}

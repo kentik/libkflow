@@ -1,4 +1,4 @@
-package main
+package flow
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"zombiezen.com/go/capnproto2"
 )
 
-func TestPack(t *testing.T) {
+func TestFlowRoundtrip(t *testing.T) {
 	assert := assert.New(t)
 
 	ipv6srcaddr := randbytes(16)
@@ -159,13 +159,13 @@ func TestPack(t *testing.T) {
 	runtime.KeepAlive(ipv6dstaddr)
 }
 
-func TestPackCustoms(t *testing.T) {
+func TestCustomRoundtrip(t *testing.T) {
 	assert := assert.New(t)
 
 	customs := []Custom{
-		{ID: 1, Value: string("foo")},
-		{ID: 2, Value: uint32(42)},
-		{ID: 3, Value: float32(3.14)},
+		{ID: 1, Type: Str, Str: string("foo")},
+		{ID: 2, Type: U32, U32: uint32(42)},
+		{ID: 3, Type: F32, F32: float32(3.14)},
 	}
 
 	ckcust := make([]_Ctype_kflowCustom, len(customs))
@@ -173,38 +173,38 @@ func TestPackCustoms(t *testing.T) {
 		ckcust[i] = c.ToC()
 	}
 
-	flow := &Ckflow{
+	flow := Ckflow{
 		numCustoms: _Ctype_uint32_t(len(ckcust)),
 	}
 	*(**_Ctype_kflowCustom)(unsafe.Pointer(&flow.customs)) = &ckcust[0]
 
-	msgs, err := roundtrip(flow)
+	msgs, err := roundtrip(&flow)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.EqualValues(1, msgs.Len())
 
 	list, _ := msgs.At(0).Custom()
-	for i := 0; i < list.Len(); i++ {
+	for i := 0; i < len(customs); i++ {
 		c := list.At(i)
 
 		assert.EqualValues(customs[i].ID, c.Id())
 
-		switch expected := customs[i].Value.(type) {
-		case string:
+		switch customs[i].Type {
+		case Str:
 			val, _ := c.Value().StrVal()
 			assert.Equal(chf.Custom_value_Which_strVal, c.Value().Which())
-			assert.Equal(expected, val)
-		case uint32:
+			assert.Equal(customs[i].Str, val)
+		case U32:
 			val := c.Value().Uint32Val()
 			assert.Equal(chf.Custom_value_Which_uint32Val, c.Value().Which())
-			assert.Equal(expected, val)
-		case float32:
+			assert.Equal(customs[i].U32, val)
+		case F32:
 			val := c.Value().Float32Val()
 			assert.Equal(chf.Custom_value_Which_float32Val, c.Value().Which())
-			assert.Equal(expected, val)
+			assert.Equal(customs[i].F32, val)
 		default:
-			t.Fatal("unsupported custom column type", reflect.TypeOf(expected))
+			t.Fatal("unsupported custom column type", customs[i].Type)
 		}
 	}
 }
@@ -226,13 +226,16 @@ func pack(flows ...*Ckflow) (*capnp.Message, error) {
 	}
 
 	for i, cflow := range flows {
-		kflow, err := Pack(seg, cflow)
-		if err != nil {
-			return nil, err
+		flow := New(cflow)
+
+		var list chf.Custom_List
+		if n := int32(len(flow.Customs)); n > 0 {
+			if list, err = chf.NewCustom_List(seg, n); err != nil {
+				return nil, err
+			}
 		}
 
-		msgs.Set(i, kflow)
-
+		flow.FillCHF(msgs.At(i), list)
 	}
 
 	root.SetMsgs(msgs)
@@ -302,31 +305,26 @@ func randbytes(n int) []byte {
 	return b
 }
 
-type Custom struct {
-	ID    uint32
-	Value interface{}
-}
-
 func (c *Custom) ToC() _Ctype_kflowCustom {
 	kc := _Ctype_kflowCustom{
 		id: _Ctype_uint64_t(c.ID),
 	}
 
 	p := unsafe.Pointer(&kc.value[0])
-	switch v := c.Value.(type) {
-	case string:
+	switch c.Type {
+	case Str:
 		kc.vtype = 1
-		array := make([]_Ctype_char, len(v)+1)
-		for i := range v {
-			array[i] = _Ctype_char(v[i])
+		array := make([]_Ctype_char, len(c.Str)+1)
+		for i, c := range c.Str {
+			array[i] = _Ctype_char(c)
 		}
 		*(**_Ctype_char)(p) = &array[0]
-	case uint32:
+	case U32:
 		kc.vtype = 2
-		*(*_Ctype_uint32_t)(p) = _Ctype_uint32_t(v)
-	case float32:
+		*(*_Ctype_uint32_t)(p) = _Ctype_uint32_t(c.U32)
+	case F32:
 		kc.vtype = 3
-		*(*_Ctype_float)(p) = _Ctype_float(v)
+		*(*_Ctype_float)(p) = _Ctype_float(c.F32)
 	}
 
 	return kc

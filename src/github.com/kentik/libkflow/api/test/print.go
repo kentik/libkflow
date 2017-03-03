@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"reflect"
 	"text/tabwriter"
 
+	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
 )
 
-func Print(out io.Writer, i int, flow chf.CHF) {
+func Print(out io.Writer, i int, flow chf.CHF, dev api.Device) {
 	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 
 	fmt.Fprintf(w, "FLOW #%02d\n", i)
@@ -82,21 +82,25 @@ func Print(out io.Writer, i int, flow chf.CHF) {
 		c := customs.At(i)
 		v := c.Value()
 
+		var name = "INVALID"
+		for _, d := range dev.Customs {
+			if d.ID == uint64(c.Id()) {
+				name = d.Name
+				break
+			}
+		}
+
 		var value interface{}
-		var vtype reflect.Kind
 		switch v.Which() {
 		case chf.Custom_value_Which_strVal:
 			value, _ = v.StrVal()
-			vtype = reflect.String
 		case chf.Custom_value_Which_uint32Val:
 			value = v.Uint32Val()
-			vtype = reflect.Uint32
 		case chf.Custom_value_Which_float32Val:
 			value = v.Float32Val()
-			vtype = reflect.Float32
 		}
 
-		fmt.Fprintf(w, "    ID %d (%s):\t%v\n", c.Id(), vtype, value)
+		fmt.Fprintf(w, "    %s:\t%v\n", name, value)
 	}
 
 	w.Flush()

@@ -8,22 +8,25 @@ import (
 	"testing"
 	"time"
 
+	"zombiezen.com/go/capnproto2"
+
 	"github.com/kentik/go-metrics"
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/kentik/libkflow/chf"
+	"github.com/kentik/libkflow/flow"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSender(t *testing.T) {
 	sender, server, assert := setup(t)
 
-	expected, err := chf.NewCHF(sender.Segment())
-	if err != nil {
-		t.Fatal(err)
+	expected := flow.Flow{
+		DeviceId:  uint32(sender.Device.ID),
+		SrcAs:     rand.Uint32(),
+		DstAs:     rand.Uint32(),
+		SampleAdj: true,
 	}
-	expected.SetSrcAs(rand.Uint32())
-	expected.SetDstAs(rand.Uint32())
 
 	sender.Send(&expected)
 
@@ -31,25 +34,8 @@ func TestSender(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(expected.String(), msgs.At(0).String())
-}
 
-func TestSenderFields(t *testing.T) {
-	sender, server, assert := setup(t)
-
-	expected, err := chf.NewCHF(sender.Segment())
-	if err != nil {
-		t.Fatal(err)
-	}
-	sender.Send(&expected)
-
-	msgs, err := receive(server)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	actual := msgs.At(0)
-	assert.EqualValues(sender.Device.ID, actual.DeviceId())
+	assert.Equal(flowToCHF(expected, t).String(), msgs.At(0).String())
 }
 
 func TestSenderStop(t *testing.T) {
@@ -65,13 +51,10 @@ func BenchmarkSenderSend(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		flow, err := chf.NewCHF(sender.Segment())
-		if err != nil {
-			b.Fatal(err)
-		}
-		flow.SetSrcAs(uint32(b.N))
-		flow.SetDstAs(uint32(b.N))
-		sender.Send(&flow)
+		sender.Send(&flow.Flow{
+			SrcAs: uint32(b.N),
+			DstAs: uint32(b.N),
+		})
 	}
 }
 
@@ -112,4 +95,21 @@ func receive(s *test.Server) (*chf.CHF_List, error) {
 	case <-time.After(interval):
 		return nil, fmt.Errorf("failed to receive flow within %s", interval)
 	}
+}
+
+func flowToCHF(flow flow.Flow, t testing.TB) chf.CHF {
+	_, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	kflow, err := chf.NewCHF(seg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := chf.NewCustom_List(seg, int32(len(flow.Customs)))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flow.FillCHF(kflow, list)
+
+	return kflow
 }

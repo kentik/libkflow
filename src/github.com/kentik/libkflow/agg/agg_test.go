@@ -9,6 +9,7 @@ import (
 
 	"github.com/kentik/go-metrics"
 	"github.com/kentik/libkflow/chf"
+	"github.com/kentik/libkflow/flow"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,8 +21,8 @@ func TestAggSimple(t *testing.T) {
 		s, assert = setup(t, interval, fps)
 	)
 
-	flows := s.send(count, func(i int, flow *chf.CHF) {
-		flow.SetSrcEthMac(uint64(i))
+	flows := s.send(count, func(i int, flow *flow.Flow) {
+		flow.SrcEthMac = uint64(i)
 	})
 
 	assert.Equal(count, len(flows))
@@ -46,7 +47,7 @@ func TestAggDrop(t *testing.T) {
 		s, assert = setup(t, interval, fps)
 	)
 
-	flows := s.send(count, func(i int, flow *chf.CHF) {})
+	flows := s.send(count, func(i int, flow *flow.Flow) {})
 
 	assert.Equal(expect, len(flows))
 
@@ -86,15 +87,10 @@ func setup(t *testing.T, interval time.Duration, fps int) (*testState, *assert.A
 	}, assert.New(t)
 }
 
-func (s *testState) send(n int, g func(int, *chf.CHF)) []chf.CHF {
+func (s *testState) send(n int, g func(int, *flow.Flow)) []chf.CHF {
 	for i := 0; i < n; i++ {
-		f, err := chf.NewCHF(s.agg.Segment())
-		if err != nil {
-			s.Fatal(err)
-		}
-
+		f := flow.Flow{}
 		g(i, &f)
-
 		s.agg.Add(&f)
 	}
 	return s.receive()

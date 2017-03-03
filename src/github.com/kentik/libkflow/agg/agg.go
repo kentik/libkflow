@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kentik/libkflow/chf"
+	"github.com/kentik/libkflow/flow"
 	"zombiezen.com/go/capnproto2"
 )
 
@@ -17,8 +18,6 @@ type Agg struct {
 	queue     *Queue
 	queued    int64
 	batchSize int
-	msg       *capnp.Message
-	seg       *capnp.Segment
 	metrics   *Metrics
 	sync.RWMutex
 }
@@ -31,19 +30,12 @@ const MaxFlowBuffer = 8
 // cap'n proto message after the specified interval, resampling
 // as necessary to keep the total number under the fps arg.
 func NewAgg(interval time.Duration, fps int, metrics *Metrics) (*Agg, error) {
-	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
-	if err != nil {
-		return nil, err
-	}
-
 	a := &Agg{
 		output:   make(chan *capnp.Message),
 		done:     make(chan struct{}),
 		errors:   make(chan error, 100),
 		interval: interval,
 		ticker:   time.NewTicker(interval),
-		msg:      msg,
-		seg:      seg,
 		metrics:  metrics,
 	}
 
@@ -82,14 +74,7 @@ func (a *Agg) Errors() <-chan error {
 	return a.errors
 }
 
-func (a *Agg) Segment() *capnp.Segment {
-	a.RLock()
-	seg := a.seg
-	a.RUnlock()
-	return seg
-}
-
-func (a *Agg) Add(flow *chf.CHF) {
+func (a *Agg) Add(flow *flow.Flow) {
 	a.Lock()
 	a.queued++
 	if a.queue.Enqueue(flow) != nil {
@@ -123,8 +108,6 @@ func (a *Agg) dispatch() {
 	a.metrics.TotalFlowsIn.Mark(a.queued)
 	a.queued = 0
 	flows, count, resampleRateAdj := a.queue.Dequeue(a.batchSize, a.batchSize)
-	a.msg, msg = msg, a.msg
-	a.seg, seg = seg, a.seg
 	a.Unlock()
 
 	if count == 0 {
@@ -147,17 +130,25 @@ func (a *Agg) dispatch() {
 	var adjustedSR uint32
 
 	for i, f := range flows {
-		sampleRate = f.SampleRate()
+		sampleRate = f.SampleRate
 		adjustedSR = sampleRate * 100
 
 		if resampleRateAdj > 1.0 {
 			adjustedSR = uint32(float32(adjustedSR) * resampleRateAdj)
 		}
 
-		f.SetSampleAdj(true)
-		f.SetSampleRate(adjustedSR)
+		f.SampleAdj = true
+		f.SampleRate = adjustedSR
 
-		msgs.Set(i, *f)
+		var list chf.Custom_List
+		if n := int32(len(f.Customs)); n > 0 {
+			if list, err = chf.NewCustom_List(seg, n); err != nil {
+				a.error(err)
+				return
+			}
+		}
+
+		f.FillCHF(msgs.At(i), list)
 	}
 
 	root.SetMsgs(msgs)
