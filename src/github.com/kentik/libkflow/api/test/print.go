@@ -10,7 +10,7 @@ import (
 	"github.com/kentik/libkflow/chf"
 )
 
-func Print(out io.Writer, i int, flow chf.CHF, dev api.Device) {
+func Print(out io.Writer, i int, flow chf.CHF, dev *api.Device) {
 	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 
 	fmt.Fprintf(w, "FLOW #%02d\n", i)

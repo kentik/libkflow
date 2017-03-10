@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/kentik/libkflow/api"
@@ -29,6 +30,25 @@ func TestGetDeviceByName(t *testing.T) {
 	assert := assert.New(t)
 
 	device2, err := client.GetDeviceByName(device.Name)
+
+	assert.NoError(err)
+	assert.EqualValues(device, device2)
+}
+
+func TestGetDeviceByHostname(t *testing.T) {
+	client, _, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		t.Fatal(err)
+	}
+	device.Name = api.NormalizeName(hostname)
+
+	device2, err := client.GetDeviceByHostname()
 
 	assert.NoError(err)
 	assert.EqualValues(device, device2)

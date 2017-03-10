@@ -6,7 +6,7 @@ import (
 )
 
 type DeviceResponse struct {
-	Device Device `json:"device"`
+	Device *Device `json:"device"`
 }
 
 type Device struct {

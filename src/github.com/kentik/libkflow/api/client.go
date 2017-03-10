@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -53,7 +54,15 @@ func (c *Client) GetDeviceByID(did int) (*Device, error) {
 }
 
 func (c *Client) GetDeviceByName(name string) (*Device, error) {
-	return c.getdevice(fmt.Sprintf(c.deviceURL, name))
+	return c.getdevice(fmt.Sprintf(c.deviceURL, NormalizeName(name)))
+}
+
+func (c *Client) GetDeviceByHostname() (*Device, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+	return c.GetDeviceByName(hostname)
 }
 
 func (c *Client) getdevice(url string) (*Device, error) {
@@ -72,7 +81,7 @@ func (c *Client) getdevice(url string) (*Device, error) {
 		return nil, err
 	}
 
-	return &dr.Device, nil
+	return dr.Device, nil
 }
 
 func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {

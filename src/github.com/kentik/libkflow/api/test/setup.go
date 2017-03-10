@@ -13,7 +13,7 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 	var (
 		email  = randstr(8)
 		token  = randstr(8)
-		device = api.Device{
+		device = &api.Device{
 			ID:          rand.Int(),
 			Name:        randstr(8),
 			MaxFlowRate: 10,
@@ -37,7 +37,7 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 		Proxy:   nil,
 	})
 
-	return client, server, &device, nil
+	return client, server, device, nil
 }
 
 func randstr(n int) string {

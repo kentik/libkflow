@@ -64,7 +64,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	case cfg.hostname != nil:
 		device, err = client.GetDeviceByName(C.GoString(cfg.hostname))
 	default:
-		err = fmt.Errorf("config: missing device selector")
+		device, err = client.GetDeviceByHostname()
 	}
 
 	if err != nil {

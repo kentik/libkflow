@@ -31,7 +31,7 @@ type Server struct {
 	Port     int
 	Email    string
 	Token    string
-	Device   api.Device
+	Device   *api.Device
 	Log      *log.Logger
 	quiet    bool
 	flows    chan chf.PackedCHF
@@ -78,7 +78,7 @@ func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Serve(email, token string, dev api.Device) error {
+func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.Email = email
 	s.Token = token
 	s.Device = dev
