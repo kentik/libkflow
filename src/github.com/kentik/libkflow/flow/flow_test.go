@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"unsafe"
 
@@ -207,6 +208,34 @@ func TestCustomRoundtrip(t *testing.T) {
 			t.Fatal("unsupported custom column type", customs[i].Type)
 		}
 	}
+}
+
+func TestCustomStrTruncate(t *testing.T) {
+	assert := assert.New(t)
+	string := strings.Repeat("A", MAX_CUSTOM_STR_LEN+2)
+
+	customs := []Custom{
+		{ID: 2, Type: Str, Str: string},
+	}
+
+	ckcust := make([]_Ctype_kflowCustom, len(customs))
+	for i, c := range customs {
+		ckcust[i] = c.ToC()
+	}
+
+	ckflow := Ckflow{
+		numCustoms: _Ctype_uint32_t(len(ckcust)),
+	}
+	*(**_Ctype_kflowCustom)(unsafe.Pointer(&ckflow.customs)) = &ckcust[0]
+
+	msgs, err := roundtrip(&ckflow)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	list, _ := msgs.At(0).Custom()
+	val, _ := list.At(0).Value().StrVal()
+	assert.Equal(val, string[0:MAX_CUSTOM_STR_LEN])
 }
 
 func pack(flows ...*Ckflow) (*capnp.Message, error) {

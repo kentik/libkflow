@@ -13,6 +13,8 @@ import (
 // `go test` cannot reference the "C" package.
 type Ckflow C.kflow
 
+const MAX_CUSTOM_STR_LEN = 384
+
 type Flow struct {
 	TimestampNano     int64
 	DstAs             uint32
@@ -255,7 +257,7 @@ func newCustoms(cflow *Ckflow) []Custom {
 		switch ccc.vtype {
 		case C.KFLOWCUSTOMSTR:
 			custom.Type = Str
-			custom.Str = C.GoString(*(**C.char)(p))
+			custom.Str = trunc(C.GoString(*(**C.char)(p)))
 		case C.KFLOWCUSTOMU32:
 			custom.Type = U32
 			custom.U32 = uint32(*(*C.uint32_t)(p))
@@ -273,4 +275,11 @@ func bts(p *C.uint8_t, len C.int) []byte {
 		return nil
 	}
 	return C.GoBytes(unsafe.Pointer(p), len)
+}
+
+func trunc(s string) string {
+	if n := MAX_CUSTOM_STR_LEN; len(s) > n {
+		return s[:n]
+	}
+	return s
 }
