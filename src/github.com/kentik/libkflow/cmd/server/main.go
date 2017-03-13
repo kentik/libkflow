@@ -24,6 +24,12 @@ type Args struct {
 }
 
 func main() {
+	devname, err := os.Hostname()
+	if err != nil {
+		log.Printf("hostname lookup error: %#v", err)
+		devname = "dev1"
+	}
+
 	args := Args{
 		Host:       "127.0.0.1",
 		Port:       8999,
@@ -33,7 +39,7 @@ func main() {
 		Token:      "token",
 		CompanyID:  1,
 		DeviceID:   1,
-		DeviceName: "dev1",
+		DeviceName: api.NormalizeName(devname),
 		MaxFPS:     4000,
 		Customs: []api.Column{
 			{ID: 1, Type: "uint32", Name: "RETRANSMITTED_IN_PKTS"},
