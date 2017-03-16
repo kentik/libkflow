@@ -14,10 +14,10 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 		email  = randstr(8)
 		token  = randstr(8)
 		device = &api.Device{
-			ID:          rand.Int(),
+			ID:          int(rand.Uint32()),
 			Name:        randstr(8),
 			MaxFlowRate: 10,
-			CompanyID:   rand.Int(),
+			CompanyID:   int(rand.Uint32()),
 		}
 	)
 

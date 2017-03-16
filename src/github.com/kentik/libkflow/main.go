@@ -21,6 +21,10 @@ var errors chan error
 
 //export kflowInit
 func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int {
+	if cfg == nil {
+		return C.EKFLOWCONFIG
+	}
+
 	errors = make(chan error, 100)
 
 	flowurl, err := url.Parse(C.GoString(cfg.URL))
@@ -68,8 +72,15 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	}
 
 	if err != nil {
-		fail("device lookup error: %s", err)
-		return C.EKFLOWCONFIG
+		switch {
+		case api.IsErrorWithStatusCode(err, 401):
+			return C.EKFLOWAUTH
+		case api.IsErrorWithStatusCode(err, 404):
+			return C.EKFLOWNODEVICE
+		default:
+			fail("device lookup error: %s", err)
+			return C.EKFLOWCONFIG
+		}
 	}
 
 	populateCustoms(device, customs, n)
@@ -179,3 +190,14 @@ func fail(format string, args ...interface{}) {
 
 func main() {
 }
+
+const (
+	EKFLOWCONFIG   = C.EKFLOWCONFIG
+	EKFLOWNOINIT   = C.EKFLOWNOINIT
+	EKFLOWNOMEM    = C.EKFLOWNOMEM
+	EKFLOWTIMEOUT  = C.EKFLOWTIMEOUT
+	EKFLOWSEND     = C.EKFLOWSEND
+	EKFLOWNOCUSTOM = C.EKFLOWNOCUSTOM
+	EKFLOWAUTH     = C.EKFLOWAUTH
+	EKFLOWNODEVICE = C.EKFLOWNODEVICE
+)

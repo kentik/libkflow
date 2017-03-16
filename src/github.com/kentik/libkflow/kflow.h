@@ -178,5 +178,7 @@ char *kflowVersion();
 #define EKFLOWTIMEOUT  4         // request timed out
 #define EKFLOWSEND     5         // flow could not be sent
 #define EKFLOWNOCUSTOM 6         // custom field does not exist
+#define EKFLOWAUTH     7         // authentication failed
+#define EKFLOWNODEVICE 8         // no matching device found
 
 #endif // KFLOW_H
