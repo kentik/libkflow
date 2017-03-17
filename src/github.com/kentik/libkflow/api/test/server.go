@@ -92,7 +92,9 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 		flows := atomic.SwapUint64(&flowCounter, 0)
 		packets := atomic.SwapUint64(&packetCounter, 0)
 		bytes := atomic.SwapUint64(&byteCounter, 0)
-		s.Log.Printf("flows: %12d, packets: %12d, bytes: %12d", flows, packets, bytes)
+		if flows > 0 || packets > 0 || bytes > 0 {
+			s.Log.Printf("flows: %12d, packets: %12d, bytes: %12d", flows, packets, bytes)
+		}
 	})
 	c.Start()
 
