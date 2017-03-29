@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 )
 
@@ -57,12 +57,31 @@ func (c *Client) GetDeviceByName(name string) (*Device, error) {
 	return c.getdevice(fmt.Sprintf(c.deviceURL, NormalizeName(name)))
 }
 
-func (c *Client) GetDeviceByHostname() (*Device, error) {
-	hostname, err := os.Hostname()
+func (c *Client) GetDeviceByIP(ip net.IP) (*Device, error) {
+	return c.getdevice(fmt.Sprintf(c.deviceURL, ip))
+}
+
+func (c *Client) GetDeviceByIF(name string) (*Device, error) {
+	nif, err := net.InterfaceByName(name)
 	if err != nil {
 		return nil, err
 	}
-	return c.GetDeviceByName(hostname)
+
+	addrs, err := nif.Addrs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, addr := range addrs {
+		if ip, _, err := net.ParseCIDR(addr.String()); err == nil {
+			dev, err := c.GetDeviceByIP(ip)
+			if err == nil {
+				return dev, err
+			}
+		}
+	}
+
+	return nil, &Error{StatusCode: 404}
 }
 
 func (c *Client) getdevice(url string) (*Device, error) {

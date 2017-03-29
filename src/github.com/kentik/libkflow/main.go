@@ -4,6 +4,7 @@ package main
 import "C"
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"os/signal"
 	"reflect"
@@ -65,10 +66,12 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	switch {
 	case cfg.device_id > 0:
 		device, err = client.GetDeviceByID(int(cfg.device_id))
-	case cfg.hostname != nil:
-		device, err = client.GetDeviceByName(C.GoString(cfg.hostname))
+	case cfg.device_if != nil:
+		device, err = client.GetDeviceByIF(C.GoString(cfg.device_if))
+	case cfg.device_ip != nil:
+		device, err = client.GetDeviceByIP(net.ParseIP(C.GoString(cfg.device_ip)))
 	default:
-		device, err = client.GetDeviceByHostname()
+		err = fmt.Errorf("no device identifier supplied")
 	}
 
 	if err != nil {

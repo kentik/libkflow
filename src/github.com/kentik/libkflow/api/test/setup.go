@@ -3,6 +3,7 @@ package test
 import (
 	"encoding/base64"
 	"math/rand"
+	"net"
 	"net/url"
 	"time"
 
@@ -16,10 +17,20 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 		device = &api.Device{
 			ID:          int(rand.Uint32()),
 			Name:        randstr(8),
+			IP:          net.ParseIP("127.0.0.1"),
 			MaxFlowRate: 10,
 			CompanyID:   int(rand.Uint32()),
 		}
 	)
+
+	if ifs, err := net.Interfaces(); err == nil && len(ifs) > 0 {
+		if addrs, err := ifs[0].Addrs(); err == nil && len(addrs) > 0 {
+			addr := addrs[rand.Intn(len(addrs))]
+			if ip, _, err := net.ParseCIDR(addr.String()); err == nil {
+				device.IP = ip
+			}
+		}
+	}
 
 	server, err := NewServer("127.0.0.1", 0, false, true)
 	if err != nil {

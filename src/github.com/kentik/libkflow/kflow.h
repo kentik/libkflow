@@ -23,8 +23,9 @@ typedef struct {
         char *URL;               // optional HTTP proxy URL
     } proxy;
 
-    char *hostname;              // device hostname
     int device_id;               // device ID
+    char *device_if;             // device interface name
+    char *device_ip;             // device IP
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level
 } kflowConfig;

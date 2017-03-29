@@ -112,7 +112,11 @@ func (s *Server) Flows() <-chan chf.PackedCHF {
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 	id := strings.Split(r.URL.Path, "/")[4]
 
-	if id != strconv.Itoa(s.Device.ID) && id != s.Device.Name {
+	switch {
+	case id == strconv.Itoa(s.Device.ID):
+	case id == s.Device.Name:
+	case net.ParseIP(id).Equal(s.Device.IP):
+	default:
 		panic(http.StatusNotFound)
 	}
 

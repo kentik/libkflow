@@ -16,7 +16,7 @@ func TestInit(t *testing.T) {
 	n = int(kflowInit(cfg, nil, nil))
 	assert.Equal(0, n)
 
-	// init with hostname
+	// init with device IP
 	cfg.device_id = 0
 	n = int(kflowInit(cfg, nil, nil))
 	assert.Equal(0, n)
@@ -52,9 +52,9 @@ func TestInitInvalidDevice(t *testing.T) {
 	n = int(kflowInit(cfg, nil, nil))
 	assert.Equal(EKFLOWNODEVICE, n)
 
-	// invalid hostname
+	// invalid device IP
 	cfg.device_id = 0
-	cfg.hostname = (*_Ctype_char)(unsafe.Pointer(&hostname[1]))
+	cfg.device_ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[1]))
 	n = int(kflowInit(cfg, nil, nil))
 	assert.Equal(EKFLOWNODEVICE, n)
 }
@@ -69,7 +69,7 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 	apiurl = append([]byte(server.URL()+"/api/v5"), 0)
 	email = append([]byte(client.Header["X-CH-Auth-Email"][0]), 0)
 	token = append([]byte(client.Header["X-CH-Auth-API-Token"][0]), 0)
-	hostname = append([]byte(device.Name), 0)
+	deviceip = append([]byte(device.IP.String()), 0)
 
 	cfg := _Ctype_struct___3{
 		API: _Ctype_struct___4{
@@ -78,7 +78,7 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 			URL:   (*_Ctype_char)(unsafe.Pointer(&apiurl[0])),
 		},
 		device_id: _Ctype_int(device.ID),
-		hostname:  (*_Ctype_char)(unsafe.Pointer(&hostname[0])),
+		device_ip: (*_Ctype_char)(unsafe.Pointer(&deviceip[0])),
 	}
 
 	return &cfg, assert
@@ -88,5 +88,5 @@ var (
 	apiurl   []byte
 	email    []byte
 	token    []byte
-	hostname []byte
+	deviceip []byte
 )

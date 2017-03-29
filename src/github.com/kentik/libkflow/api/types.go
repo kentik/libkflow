@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 )
 
 type DeviceResponse struct {
@@ -12,6 +13,7 @@ type DeviceResponse struct {
 type Device struct {
 	ID          int      `json:"id,string"`
 	Name        string   `json:"device_name"`
+	IP          net.IP   `json:"ip"`
 	MaxFlowRate int      `json:"max_flow_rate"`
 	CompanyID   int      `json:"company_id,string"`
 	Customs     []Column `json:"custom_column_data,omitempty"`

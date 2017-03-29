@@ -1,7 +1,7 @@
 package api_test
 
 import (
-	"os"
+	"net"
 	"testing"
 
 	"github.com/kentik/libkflow/api"
@@ -35,20 +35,30 @@ func TestGetDeviceByName(t *testing.T) {
 	assert.EqualValues(device, device2)
 }
 
-func TestGetDeviceByHostname(t *testing.T) {
+func TestGetDeviceByIP(t *testing.T) {
 	client, _, device, err := test.NewClientServer()
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert := assert.New(t)
 
-	hostname, err := os.Hostname()
+	device2, err := client.GetDeviceByIP(device.IP)
+
+	assert.NoError(err)
+	assert.EqualValues(device, device2)
+}
+
+func TestGetDeviceByIF(t *testing.T) {
+	client, _, device, err := test.NewClientServer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	device.Name = api.NormalizeName(hostname)
+	assert := assert.New(t)
 
-	device2, err := client.GetDeviceByHostname()
+	ifs, err := net.Interfaces()
+	assert.NoError(err)
+
+	device2, err := client.GetDeviceByIF(ifs[0].Name)
 
 	assert.NoError(err)
 	assert.EqualValues(device, device2)
@@ -63,5 +73,13 @@ func TestGetInvalidDevice(t *testing.T) {
 
 	_, err = client.GetDeviceByName(device.Name + "-invalid")
 	assert.Error(err)
-	assert.Equal(&api.Error{StatusCode: 404}, err)
+	assert.True(api.IsErrorWithStatusCode(err, 404), err)
+
+	_, err = client.GetDeviceByIF("invalid")
+	assert.Error(err)
+
+	ip := append(make([]byte, 1, 16), device.IP[1:]...)
+	_, err = client.GetDeviceByIP(ip)
+	assert.Error(err)
+	assert.True(api.IsErrorWithStatusCode(err, 404), err)
 }
