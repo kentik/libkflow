@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -108,7 +109,9 @@ func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
+
 	defer r.Body.Close()
+	io.Copy(ioutil.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return fmt.Errorf("api: HTTP status code %d", r.StatusCode)
