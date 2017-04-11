@@ -27,10 +27,11 @@ type ClientConfig struct {
 }
 
 func NewClient(config ClientConfig) *Client {
-	transport := &http.Transport{}
+	transport := *(http.DefaultTransport.(*http.Transport))
+	transport.Proxy = nil
 
 	client := &http.Client{
-		Transport: transport,
+		Transport: &transport,
 		Timeout:   config.Timeout,
 	}
 
