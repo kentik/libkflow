@@ -11,8 +11,8 @@ import (
 )
 
 type Args struct {
-	Host       string       `short:"h"          description:"listen on host "`
 	Port       int          `short:"p"          description:"listen on port "`
+	Host       string       `long:"host"        description:"listen on host "`
 	TLS        bool         `long:"tls"         description:"require TLS    "`
 	Quiet      bool         `long:"quiet"       description:"minimize output"`
 	Email      string       `long:"email"       description:"API auth email "`
