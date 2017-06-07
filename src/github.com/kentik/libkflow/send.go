@@ -1,4 +1,4 @@
-package main
+package libkflow
 
 import (
 	"bytes"
@@ -13,40 +13,59 @@ import (
 	"zombiezen.com/go/capnproto2"
 )
 
+// A Sender aggregates and transmits flow information to Kentik.
 type Sender struct {
-	Agg     *agg.Agg
-	Exit    chan struct{}
-	URL     *url.URL
-	Timeout time.Duration
-	Client  *api.Client
-	Verbose int
-	Errors  chan error
-	Device  *api.Device
-	Update  *time.Ticker
+	agg     *agg.Agg
+	exit    chan struct{}
+	url     *url.URL
+	timeout time.Duration
+	client  *api.Client
+	verbose int
+	ticker  *time.Ticker
 	workers sync.WaitGroup
+	Device  *api.Device
+	Errors  chan<- error
 }
 
-func NewSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
+func newSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
 	return &Sender{
-		Exit:    make(chan struct{}),
-		URL:     url,
-		Timeout: timeout,
-		Verbose: verbose,
-		Update:  time.NewTicker(20 * time.Minute),
+		exit:    make(chan struct{}),
+		url:     url,
+		timeout: timeout,
+		verbose: verbose,
+		ticker:  time.NewTicker(20 * time.Minute),
 	}
 }
 
-func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n int) error {
+// Send adds a flow record to the outgoing queue.
+func (s *Sender) Send(flow *flow.Flow) {
+	s.debug("sending flow to aggregator")
+	flow.DeviceId = uint32(s.Device.ID)
+	s.agg.Add(flow)
+}
+
+// Stop requests a graceful shutdown of the Sender.
+func (s *Sender) Stop(wait time.Duration) bool {
+	s.agg.Stop()
+	select {
+	case <-s.exit:
+		return true
+	case <-time.After(wait):
+		return false
+	}
+}
+
+func (s *Sender) start(agg *agg.Agg, client *api.Client, device *api.Device, n int) error {
 	client.Header.Set("Content-Type", "application/binary")
 
-	q := s.URL.Query()
+	q := s.url.Query()
 	q.Set("sid", "0")
 	q.Set("sender_id", device.ClientID())
 
-	s.Agg = agg
-	s.URL.RawQuery = q.Encode()
+	s.agg = agg
+	s.url.RawQuery = q.Encode()
 	s.Device = device
-	s.Client = client
+	s.client = client
 	s.workers.Add(n)
 
 	for i := 0; i < n; i++ {
@@ -60,28 +79,12 @@ func (s *Sender) Start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 	return nil
 }
 
-func (s *Sender) Send(flow *flow.Flow) {
-	s.debug("sending flow to aggregator")
-	flow.DeviceId = uint32(s.Device.ID)
-	s.Agg.Add(flow)
-}
-
-func (s *Sender) Stop(wait time.Duration) bool {
-	s.Agg.Stop()
-	select {
-	case <-s.Exit:
-		return true
-	case <-time.After(wait):
-		return false
-	}
-}
-
 func (s *Sender) dispatch() {
 	buf := &bytes.Buffer{}
 	cid := [80]byte{}
-	url := s.URL.String()
+	url := s.url.String()
 
-	for msg := range s.Agg.Output() {
+	for msg := range s.agg.Output() {
 		s.debug("dispatching aggregated flow")
 
 		buf.Reset()
@@ -93,7 +96,7 @@ func (s *Sender) dispatch() {
 			continue
 		}
 
-		err = s.Client.SendFlow(url, buf)
+		err = s.client.SendFlow(url, buf)
 		if err != nil {
 			s.error(err)
 			continue
@@ -105,12 +108,12 @@ func (s *Sender) dispatch() {
 func (s *Sender) monitor() {
 	for {
 		select {
-		case err := <-s.Agg.Errors():
+		case err := <-s.agg.Errors():
 			s.error(err)
-		case <-s.Agg.Done():
+		case <-s.agg.Done():
 			s.workers.Wait()
-			s.Update.Stop()
-			s.Exit <- struct{}{}
+			s.ticker.Stop()
+			s.exit <- struct{}{}
 			s.debug("sender stopped")
 			return
 		}
@@ -118,10 +121,10 @@ func (s *Sender) monitor() {
 }
 
 func (s *Sender) update() {
-	for range s.Update.C {
+	for range s.ticker.C {
 		var fps int
 
-		switch updated, err := s.Client.GetDeviceByID(s.Device.ID); {
+		switch updated, err := s.client.GetDeviceByID(s.Device.ID); {
 		case err == nil:
 			fps = updated.MaxFlowRate
 		case api.IsErrorWithStatusCode(err, 404):
@@ -133,14 +136,14 @@ func (s *Sender) update() {
 
 		if s.Device.MaxFlowRate != fps {
 			s.debug("updating max FPS to %d", fps)
-			s.Agg.Configure(fps)
+			s.agg.Configure(fps)
 			s.Device.MaxFlowRate = fps
 		}
 	}
 }
 
 func (s *Sender) debug(fmt string, v ...interface{}) {
-	if s.Verbose > 0 {
+	if s.verbose > 0 {
 		log.Printf(fmt, v...)
 	}
 }

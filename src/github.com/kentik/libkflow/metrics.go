@@ -1,4 +1,4 @@
-package main
+package libkflow
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ type Metrics struct {
 	agg.Metrics
 }
 
-func NewMetrics(clientid string) *Metrics {
+func newMetrics(clientid string) *Metrics {
 	clientid = strings.Replace(clientid, ":", ".", -1)
 
 	name := func(key string) string {
@@ -43,7 +43,7 @@ func NewMetrics(clientid string) *Metrics {
 	}
 }
 
-func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy *url.URL) {
+func (m *Metrics) start(url, email, token string, interval time.Duration, proxy *url.URL) {
 	extra := map[string]string{
 		"ver":   "libkflow-" + Version,
 		"ft":    "nprobe",

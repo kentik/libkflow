@@ -1,5 +1,6 @@
 MAIN := github.com/kentik/libkflow
-PKGS := $(MAIN) $(MAIN)/api $(MAIN)/chf
+CLIB := $(MAIN)/cmd/libkflow
+PKGS := $(MAIN) $(MAIN)/api $(MAIN)/chf $(CLIB)
 
 CFLAGS  += -std=c99
 
@@ -41,7 +42,7 @@ $(ARCHIVE): $(ARTIFACTS)
 	@tar czf $@ $(foreach f,$^,-C $(dir $f) $(notdir $f))
 
 $(WORK)/libkflow.a: $(SRC)
-	go build -o $@ -buildmode=c-archive -ldflags="-X main.Version=$(VERSION)" $(MAIN)
+	go build -o $@ -buildmode=c-archive -ldflags="-X main.Version=$(VERSION)" $(CLIB)
 
 $(WORK)/server: $(SRC)
 	go build -o $@ $(MAIN)/cmd/server

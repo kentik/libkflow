@@ -1,6 +1,6 @@
 package main
 
-// #include "kflow.h"
+// #include "../../kflow.h"
 import "C"
 import (
 	"fmt"
@@ -12,25 +12,37 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/kentik/libkflow/agg"
+	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/flow"
 )
 
-var sender *Sender
+var sender *libkflow.Sender
 var errors chan error
 
 //export kflowInit
 func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int {
+	errors = make(chan error, 100)
+
 	if cfg == nil {
 		return C.EKFLOWCONFIG
 	}
 
-	errors = make(chan error, 100)
-
 	flowurl, err := url.Parse(C.GoString(cfg.URL))
 	if err != nil {
 		fail("invalid flow URL: %s", err)
+		return C.EKFLOWCONFIG
+	}
+
+	apiurl, err := url.Parse(C.GoString(cfg.API.URL))
+	if err != nil {
+		fail("invalid API URL: %s", err)
+		return C.EKFLOWCONFIG
+	}
+
+	metricsurl, err := url.Parse(C.GoString(cfg.metrics.URL))
+	if err != nil {
+		fail("invalid metrics URL: %s", err)
 		return C.EKFLOWCONFIG
 	}
 
@@ -39,7 +51,6 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		token   = C.GoString(cfg.API.token)
 		timeout = time.Duration(cfg.timeout) * time.Millisecond
 		proxy   *url.URL
-		device  *api.Device
 	)
 
 	if cfg.proxy.URL != nil {
@@ -50,62 +61,40 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		}
 	}
 
-	apiurl, err := url.Parse(C.GoString(cfg.API.URL))
-	if err != nil {
-		fail("invalid API URL: %s", err)
-	}
-
-	client := api.NewClient(api.ClientConfig{
-		Email:   email,
-		Token:   token,
-		Timeout: timeout,
-		API:     apiurl,
-		Proxy:   proxy,
-	})
+	config := libkflow.NewConfig(email, token)
+	config.SetProxy(proxy)
+	config.SetTimeout(timeout)
+	config.SetVerbose(int(cfg.verbose))
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
 
 	switch {
 	case cfg.device_id > 0:
-		device, err = client.GetDeviceByID(int(cfg.device_id))
+		did := int(cfg.device_id)
+		sender, err = libkflow.NewSenderWithDeviceID(did, errors, config)
 	case cfg.device_if != nil:
-		device, err = client.GetDeviceByIF(C.GoString(cfg.device_if))
+		dif := C.GoString(cfg.device_if)
+		sender, err = libkflow.NewSenderWithDeviceIF(dif, errors, config)
 	case cfg.device_ip != nil:
-		device, err = client.GetDeviceByIP(net.ParseIP(C.GoString(cfg.device_ip)))
+		dip := net.ParseIP(C.GoString(cfg.device_ip))
+		sender, err = libkflow.NewSenderWithDeviceIP(dip, errors, config)
 	default:
-		err = fmt.Errorf("no device identifier supplied")
+		fail("no device identifier supplied")
+		return C.EKFLOWCONFIG
 	}
 
 	if err != nil {
-		switch {
-		case api.IsErrorWithStatusCode(err, 401):
+		switch err {
+		case libkflow.ErrInvalidAuth:
 			return C.EKFLOWAUTH
-		case api.IsErrorWithStatusCode(err, 404):
+		case libkflow.ErrInvalidDevice:
 			return C.EKFLOWNODEVICE
 		default:
-			fail("device lookup error: %s", err)
+			fail("library setup error: %s", err)
 			return C.EKFLOWCONFIG
 		}
 	}
 
-	populateCustoms(device, customs, n)
-
-	interval := time.Duration(cfg.metrics.interval) * time.Minute
-	metrics := NewMetrics(device.ClientID())
-	metrics.Start(C.GoString(cfg.metrics.URL), email, token, interval, proxy)
-
-	agg, err := agg.NewAgg(time.Second, device.MaxFlowRate, &metrics.Metrics)
-	if err != nil {
-		fail("agg setup error: %s", err)
-		return C.EKFLOWCONFIG
-	}
-
-	sender = NewSender(flowurl, timeout, int(cfg.verbose))
-	sender.Errors = errors
-
-	if err = sender.Start(agg, client, device, 2); err != nil {
-		fail("send startup error: %s", err)
-		sender = nil
-		return C.EKFLOWCONFIG
-	}
+	populateCustoms(sender.Device, customs, n)
 
 	signal.Ignore(syscall.SIGPIPE)
 
@@ -150,7 +139,7 @@ func kflowError() *C.char {
 
 //export kflowVersion
 func kflowVersion() *C.char {
-	return C.CString(Version)
+	return C.CString(libkflow.Version)
 }
 
 func populateCustoms(device *api.Device, ptr **C.kflowCustom, cnt *C.uint32_t) {
