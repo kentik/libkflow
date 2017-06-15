@@ -51,6 +51,11 @@ func (c *Config) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
 
+// Set just the flow server
+func (c *Config) SetFlow(server string) {
+	c.flow = parseURL(server + "/chf")
+}
+
 // SetVerbose sets the verbosity level. Specifying a value greater than
 // zero will cause verbose debug messages to be print to stderr.
 func (c *Config) SetVerbose(verbose int) {
