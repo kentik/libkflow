@@ -47,8 +47,8 @@ func setupLibTest(t *testing.T) (*api.Device, *assert.Assertions) {
 	flowurl, _ = url.Parse(server.URL() + "/chf")
 	metricsurl, _ = url.Parse(server.URL() + "/tsdb")
 
-	email = client.Header["X-CH-Auth-Email"][0]
-	token = client.Header["X-CH-Auth-API-Token"][0]
+	email = client.Email
+	token = client.Token
 
 	return device, assert
 }

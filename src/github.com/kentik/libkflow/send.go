@@ -56,8 +56,6 @@ func (s *Sender) Stop(wait time.Duration) bool {
 }
 
 func (s *Sender) start(agg *agg.Agg, client *api.Client, device *api.Device, n int) error {
-	client.Header.Set("Content-Type", "application/binary")
-
 	q := s.url.Query()
 	q.Set("sid", "0")
 	q.Set("sender_id", device.ClientID())

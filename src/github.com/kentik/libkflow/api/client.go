@@ -13,7 +13,8 @@ import (
 )
 
 type Client struct {
-	Header    http.Header
+	Email     string
+	Token     string
 	deviceURL string
 	*http.Client
 }
@@ -39,13 +40,9 @@ func NewClient(config ClientConfig) *Client {
 		transport.Proxy = http.ProxyURL(config.Proxy)
 	}
 
-	header := http.Header{
-		"X-CH-Auth-Email":     {config.Email},
-		"X-CH-Auth-API-Token": {config.Token},
-	}
-
 	return &Client{
-		Header:    header,
+		Email:     config.Email,
+		Token:     config.Token,
 		deviceURL: config.API.String() + "/device/%v",
 		Client:    client,
 	}
@@ -87,7 +84,7 @@ func (c *Client) GetDeviceByIF(name string) (*Device, error) {
 }
 
 func (c *Client) getdevice(url string) (*Device, error) {
-	r, err := c.do("GET", url, nil)
+	r, err := c.do("GET", url, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +103,7 @@ func (c *Client) getdevice(url string) (*Device, error) {
 }
 
 func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
-	r, err := c.do("POST", url, buf)
+	r, err := c.do("POST", url, "application/binary", buf)
 	if err != nil {
 		return err
 	}
@@ -121,11 +118,15 @@ func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	return nil
 }
 
-func (c *Client) do(method, url string, body io.Reader) (*http.Response, error) {
+func (c *Client) do(method, url, ctype string, body io.Reader) (*http.Response, error) {
 	r, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
-	r.Header = c.Header
+
+	r.Header.Set("X-CH-Auth-Email", c.Email)
+	r.Header.Set("X-CH-Auth-API-Token", c.Token)
+	r.Header.Set("Content-Type", ctype)
+
 	return c.Client.Do(r)
 }

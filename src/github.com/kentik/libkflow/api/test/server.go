@@ -139,6 +139,10 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 		panic(http.StatusBadRequest)
 	}
 
+	if r.Header.Get("Content-Type") != "application/binary" {
+		panic(http.StatusBadRequest)
+	}
+
 	cid := [80]byte{}
 	n, err := r.Body.Read(cid[:])
 	if err != nil || n != len(cid) {
