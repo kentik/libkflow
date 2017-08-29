@@ -135,6 +135,12 @@ func (c *Client) UpdateInterfaces(dev *Device) error {
 		return err
 	}
 
+	if0 := InterfaceUpdate{
+		Index: 0,
+		Desc:  "kernel",
+	}
+	updates[if0.Desc] = if0
+
 	for _, dif := range difs {
 		name := dif.Desc
 		if nif, ok := updates[name]; ok {
