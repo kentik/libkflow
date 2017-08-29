@@ -25,6 +25,32 @@ type Column struct {
 	Type string `json:"col_type"`
 }
 
+type Interface struct {
+	ID      uint64 `json:"id,string"`
+	Index   uint64 `json:"snmp_id,string"`
+	Alias   string `json:"snmp_alias"`
+	Desc    string `json:"interface_description"`
+	Address string `json:"interface_ip"`
+	Netmask string `json:"interface_ip_netmask"`
+	Addrs   []Addr `json:"secondary_ips"`
+}
+
+type InterfaceUpdate struct {
+	Index   uint64 `json:"index,string"`
+	Alias   string `json:"alias"`
+	Desc    string `json:"desc"`
+	Speed   uint64 `json:"speed"`
+	Type    uint64 `json:"type"`
+	Address string `json:"address"`
+	Netmask string `json:"netmask"`
+	Addrs   []Addr `json:"alias_address"`
+}
+
+type Addr struct {
+	Address string `json:"address"`
+	Netmask string `json:"netmask"`
+}
+
 func (d *Device) ClientID() string {
 	return fmt.Sprintf("%d:%s:%d", d.CompanyID, d.Name, d.ID)
 }

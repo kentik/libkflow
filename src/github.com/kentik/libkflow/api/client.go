@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type Client struct {
 	Email     string
 	Token     string
 	deviceURL string
+	updateURL string
 	*http.Client
 }
 
@@ -44,6 +46,7 @@ func NewClient(config ClientConfig) *Client {
 		Email:     config.Email,
 		Token:     config.Token,
 		deviceURL: config.API.String() + "/device/%v",
+		updateURL: config.API.String() + "/company/%v/device/%v/tags/snmp",
 		Client:    client,
 	}
 }
@@ -100,6 +103,74 @@ func (c *Client) getdevice(url string) (*Device, error) {
 	}
 
 	return dr.Device, nil
+}
+
+func (c *Client) GetInterfaces(did int) ([]Interface, error) {
+	url := fmt.Sprintf(c.deviceURL+"/interfaces", did)
+
+	r, err := c.do("GET", url, "application/json", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	if r.StatusCode != 200 {
+		return nil, &Error{StatusCode: r.StatusCode}
+	}
+
+	interfaces := []Interface{}
+	err = json.NewDecoder(r.Body).Decode(&interfaces)
+
+	return interfaces, err
+}
+
+func (c *Client) UpdateInterfaces(dev *Device) error {
+	difs, err := c.GetInterfaces(dev.ID)
+	if err != nil {
+		return err
+	}
+
+	updates, err := ActiveNetworkInterfaces()
+	if err != nil {
+		return err
+	}
+
+	for _, dif := range difs {
+		name := dif.Desc
+		if nif, ok := updates[name]; ok {
+			if nif.Index == dif.Index &&
+				nif.Desc == dif.Desc &&
+				nif.Address == dif.Address &&
+				nif.Netmask == dif.Netmask &&
+				reflect.DeepEqual(nif.Addrs, dif.Addrs) {
+				delete(updates, name)
+			}
+		}
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	url := fmt.Sprintf(c.updateURL, dev.CompanyID, dev.ID)
+
+	body, err := json.Marshal(updates)
+	if err != nil {
+		return err
+	}
+
+	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+	io.Copy(ioutil.Discard, r.Body)
+
+	if r.StatusCode != 200 {
+		return &Error{StatusCode: r.StatusCode}
+	}
+
+	return nil
 }
 
 func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {

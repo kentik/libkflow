@@ -119,6 +119,11 @@ func (s *Sender) monitor() {
 }
 
 func (s *Sender) update() {
+	err := s.client.UpdateInterfaces(s.Device)
+	if err != nil {
+		s.debug("error updating device interfaces: %s", err)
+	}
+
 	for range s.ticker.C {
 		var fps int
 
