@@ -17,10 +17,10 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
 	"github.com/robfig/cron"
@@ -36,7 +36,7 @@ type Server struct {
 	Log      *log.Logger
 	quiet    bool
 	flows    chan chf.PackedCHF
-	mux      *http.ServeMux
+	mux      *mux.Router
 	listener net.Listener
 }
 
@@ -80,7 +80,7 @@ func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
 		Log:      log.New(os.Stderr, "", log.LstdFlags),
 		quiet:    quiet,
 		flows:    make(chan chf.PackedCHF, 100),
-		mux:      http.NewServeMux(),
+		mux:      mux.NewRouter(),
 		listener: listener,
 	}, nil
 }
@@ -90,7 +90,9 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.Token = token
 	s.Device = dev
 
-	s.mux.HandleFunc(API+"/device/", s.wrap(s.device))
+	s.mux.HandleFunc(API+"/device/{did}", s.wrap(s.device))
+	s.mux.HandleFunc(API+"/device/{did}/interfaces", s.wrap(s.interfaces))
+	s.mux.HandleFunc(API+"/company/{cid}/device/{did}/tags/snmp", s.wrap(s.update))
 	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
 	s.mux.HandleFunc(TSDB, s.wrap(s.tsdb))
 
@@ -118,7 +120,7 @@ func (s *Server) Flows() <-chan chf.PackedCHF {
 }
 
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {
-	id := strings.Split(r.URL.Path, "/")[4]
+	id := mux.Vars(r)["did"]
 
 	switch {
 	case id == strconv.Itoa(s.Device.ID):
@@ -136,6 +138,14 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(http.StatusInternalServerError)
 	}
+}
+
+func (s *Server) interfaces(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode([]api.Interface{})
+}
+
+func (s *Server) update(w http.ResponseWriter, r *http.Request) {
+	// just ignore it
 }
 
 func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
