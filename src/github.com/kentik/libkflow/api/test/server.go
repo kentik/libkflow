@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -43,6 +44,12 @@ var (
 	flowCounter   uint64
 	packetCounter uint64
 	byteCounter   uint64
+)
+
+const (
+	API  = "/api/internal"
+	FLOW = "/chf"
+	TSDB = "/tsdb"
 )
 
 func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
@@ -83,9 +90,9 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.Token = token
 	s.Device = dev
 
-	s.mux.HandleFunc("/api/v5/device/", s.wrap(s.device))
-	s.mux.HandleFunc("/chf", s.wrap(s.flow))
-	s.mux.HandleFunc("/tsdb", s.wrap(s.tsdb))
+	s.mux.HandleFunc(API+"/device/", s.wrap(s.device))
+	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
+	s.mux.HandleFunc(TSDB, s.wrap(s.tsdb))
 
 	c := cron.New()
 	c.AddFunc("* * * * * *", func() {
@@ -101,8 +108,9 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	return http.Serve(s.listener, s.mux)
 }
 
-func (s *Server) URL() string {
-	return fmt.Sprintf("http://%s:%d", s.Host, s.Port)
+func (s *Server) URL(path string) *url.URL {
+	url, _ := url.Parse(fmt.Sprintf("http://%s:%d%s", s.Host, s.Port, path))
+	return url
 }
 
 func (s *Server) Flows() <-chan chf.PackedCHF {

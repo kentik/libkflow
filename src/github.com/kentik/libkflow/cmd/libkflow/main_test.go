@@ -66,7 +66,7 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 	}
 	assert := assert.New(t)
 
-	apiurl = append([]byte(server.URL()+"/api/v5"), 0)
+	apiurl = append([]byte(server.URL(test.API).String()), 0)
 	email = append([]byte(client.Email))
 	token = append([]byte(client.Token))
 	deviceip = append([]byte(device.IP.String()), 0)

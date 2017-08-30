@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net/url"
 	"testing"
 	"time"
 
@@ -79,7 +78,7 @@ func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
 
 	server.Log.SetOutput(ioutil.Discard)
 
-	url, _ := url.Parse(server.URL() + "/chf")
+	url := server.URL(test.FLOW)
 	sender := newSender(url, 1*time.Second, 0)
 	sender.start(agg, client, device, 1)
 

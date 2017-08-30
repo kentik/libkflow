@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"math/rand"
 	"net"
-	"net/url"
 	"time"
 
 	"github.com/kentik/libkflow/api"
@@ -38,13 +37,11 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 	}
 	go server.Serve(email, token, device)
 
-	apiurl, _ := url.Parse(server.URL() + "/api/v5")
-
 	client := api.NewClient(api.ClientConfig{
 		Email:   email,
 		Token:   token,
 		Timeout: 1 * time.Second,
-		API:     apiurl,
+		API:     server.URL(API),
 		Proxy:   nil,
 	})
 

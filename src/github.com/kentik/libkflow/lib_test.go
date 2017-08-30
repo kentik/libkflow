@@ -43,9 +43,9 @@ func setupLibTest(t *testing.T) (*api.Device, *assert.Assertions) {
 	}
 	assert := assert.New(t)
 
-	apiurl, _ = url.Parse(server.URL() + "/api/v5")
-	flowurl, _ = url.Parse(server.URL() + "/chf")
-	metricsurl, _ = url.Parse(server.URL() + "/tsdb")
+	apiurl = server.URL(test.API)
+	flowurl = server.URL(test.FLOW)
+	metricsurl = server.URL(test.TSDB)
 
 	email = client.Email
 	token = client.Token
