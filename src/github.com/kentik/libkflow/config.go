@@ -15,6 +15,7 @@ import (
 type Config struct {
 	email   string
 	token   string
+	capture Capture
 	proxy   *url.URL
 	api     *url.URL
 	flow    *url.URL
@@ -23,9 +24,21 @@ type Config struct {
 	timeout time.Duration
 }
 
+// Capture describes the packet capture settings.
+type Capture struct {
+	Device  string
+	Snaplen int32
+	Promisc bool
+}
+
 // NewConfig returns a new Config given an API access email and token.
 func NewConfig(email, token string) *Config {
 	return defaultConfig(email, token)
+}
+
+// SetCapture sets the packet capture details.
+func (c *Config) SetCapture(capture Capture) {
+	c.capture = capture
 }
 
 // SetProxy sets the HTTP proxy used for making API requests, sending
@@ -88,15 +101,25 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, &metrics.Metrics)
 	if err != nil {
 		return nil, fmt.Errorf("agg setup error: %s", err)
-		//return C.EKFLOWCONFIG
 	}
 
 	sender := newSender(c.flow, c.timeout, c.verbose)
 	sender.Errors = errors
 
+	if c.capture.Device != "" {
+		nif, err := net.InterfaceByName(c.capture.Device)
+		if err != nil {
+			return nil, err
+		}
+
+		err = client.UpdateInterfaces(dev, nif)
+		if err != nil {
+			sender.debug("error updating device interfaces: %s", err)
+		}
+	}
+
 	if err = sender.start(agg, client, dev, 2); err != nil {
 		return nil, fmt.Errorf("send startup error: %s", err)
-		//return C.EKFLOWCONFIG
 	}
 
 	return sender, nil
@@ -106,6 +129,7 @@ func defaultConfig(email, token string) *Config {
 	return &Config{
 		email:   email,
 		token:   token,
+		capture: Capture{},
 		proxy:   nil,
 		api:     parseURL("https://api.kentik.com/api/internal"),
 		flow:    parseURL("https://flow.kentik.com/chf"),

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net"
 	"strings"
 )
@@ -9,48 +10,37 @@ func NormalizeName(name string) string {
 	return strings.Replace(name, ".", "_", -1)
 }
 
-func ActiveNetworkInterfaces() (map[string]InterfaceUpdate, error) {
-	active := map[string]InterfaceUpdate{}
-
-	nifs, err := net.Interfaces()
+func GetInterfaceUpdates(nif *net.Interface) (map[string]InterfaceUpdate, error) {
+	addrs, err := interfaceAddrs(nif)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, nif := range nifs {
-		up := nif.Flags&net.FlagUp != 0
+	if len(addrs) == 0 || nif.HardwareAddr == nil {
+		return nil, fmt.Errorf("interface details unavailable")
+	}
 
-		addrs, err := interfaceAddrs(&nif)
-		if err != nil {
-			continue
-		}
+	addr := addrs[0]
+	if len(addrs) > 1 {
+		addrs = addrs[1:]
+	} else {
+		addrs = nil
+	}
 
-		if !up || len(addrs) == 0 || nif.HardwareAddr == nil {
-			continue
-		}
+	n := len(nif.HardwareAddr)
+	a := int(nif.HardwareAddr[n-2])
+	b := int(nif.HardwareAddr[n-1])
 
-		addr := addrs[0]
-		if len(addrs) > 1 {
-			addrs = addrs[1:]
-		} else {
-			addrs = nil
-		}
-
-		n := len(nif.HardwareAddr)
-		a := int(nif.HardwareAddr[n-2])
-		b := int(nif.HardwareAddr[n-1])
-
-		active[nif.Name] = InterfaceUpdate{
+	return map[string]InterfaceUpdate{
+		nif.Name: InterfaceUpdate{
 			Index:   uint64(a<<8 | b),
 			Alias:   "",
 			Desc:    nif.Name,
 			Address: addr.Address,
 			Netmask: addr.Netmask,
 			Addrs:   addrs,
-		}
-	}
-
-	return active, nil
+		},
+	}, nil
 }
 
 func interfaceAddrs(nif *net.Interface) ([]Addr, error) {

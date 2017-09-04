@@ -62,6 +62,11 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 	}
 
 	config := libkflow.NewConfig(email, token)
+	config.SetCapture(libkflow.Capture{
+		Device:  C.GoString(cfg.capture.device),
+		Snaplen: int32(cfg.capture.snaplen),
+		Promisc: cfg.capture.promisc == 1,
+	})
 	config.SetProxy(proxy)
 	config.SetTimeout(timeout)
 	config.SetVerbose(int(cfg.verbose))

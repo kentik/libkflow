@@ -15,6 +15,12 @@ typedef struct {
     } API;
 
     struct {
+        char *device;            // network device name
+        int snaplen;             // snapshot length
+        int promisc;             // promiscuous mode
+    } capture;
+
+    struct {
         int interval;            // metrics flush interval (m)
         char *URL;               // URL of metrics server
     } metrics;
@@ -23,9 +29,9 @@ typedef struct {
         char *URL;               // optional HTTP proxy URL
     } proxy;
 
-    int device_id;               // device ID
-    char *device_if;             // device interface name
-    char *device_ip;             // device IP
+    int device_id;               // Kentik device ID
+    char *device_if;             // Kentik device interface name
+    char *device_ip;             // Kentik device IP
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level
 } kflowConfig;

@@ -124,13 +124,13 @@ func (c *Client) GetInterfaces(did int) ([]Interface, error) {
 	return interfaces, err
 }
 
-func (c *Client) UpdateInterfaces(dev *Device) error {
+func (c *Client) UpdateInterfaces(dev *Device, nif *net.Interface) error {
 	difs, err := c.GetInterfaces(dev.ID)
 	if err != nil {
 		return err
 	}
 
-	updates, err := ActiveNetworkInterfaces()
+	updates, err := GetInterfaceUpdates(nif)
 	if err != nil {
 		return err
 	}
