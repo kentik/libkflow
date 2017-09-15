@@ -56,6 +56,10 @@ func main() {
 			{ID: 15, Type: "uint32", Name: "KFLOW_DNS_QUERY_TYPE"},
 			{ID: 16, Type: "uint32", Name: "KFLOW_DNS_RET_CODE"},
 			{ID: 17, Type: "string", Name: "KFLOW_DNS_RESPONSE"},
+			{ID: 18, Type: "uint32", Name: "REPEATED_RETRANSMITS"},
+			{ID: 19, Type: "uint32", Name: "RECEIVE_WINDOW"},
+			{ID: 20, Type: "uint32", Name: "ZERO_WINDOWS"},
+			{ID: 21, Type: "uint32", Name: "CONNECTION_ID"},
 		},
 	}
 
