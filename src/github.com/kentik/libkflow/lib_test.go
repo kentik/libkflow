@@ -14,7 +14,7 @@ func TestNewSenderWithDeviceID(t *testing.T) {
 	dev, assert := setupLibTest(t)
 
 	errors := make(chan error, 100)
-	config := libkflow.NewConfig(email, token)
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
 	config.OverrideURLs(apiurl, flowurl, metricsurl)
 
 	s, err := libkflow.NewSenderWithDeviceID(dev.ID, errors, config)
@@ -27,13 +27,28 @@ func TestNewSenderWithDeviceIP(t *testing.T) {
 	dev, assert := setupLibTest(t)
 
 	errors := make(chan error, 100)
-	config := libkflow.NewConfig(email, token)
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
 	config.OverrideURLs(apiurl, flowurl, metricsurl)
 
 	s, err := libkflow.NewSenderWithDeviceIP(dev.IP, errors, config)
 
 	assert.NotNil(s)
 	assert.Nil(err)
+}
+
+func TestMetricsConfig(t *testing.T) {
+	dev, assert := setupLibTest(t)
+
+	program := "test"
+	version := "0.0.1"
+
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	metrics := config.NewMetrics(dev)
+
+	assert.Equal(program+"-"+version, metrics.Extra["ver"])
+	assert.Equal(program, metrics.Extra["ft"])
+	assert.Equal("libkflow", metrics.Extra["dt"])
+	assert.Equal("primary", metrics.Extra["level"])
 }
 
 func setupLibTest(t *testing.T) (*api.Device, *assert.Assertions) {

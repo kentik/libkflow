@@ -16,11 +16,13 @@ func main() {
 		deviceID = 1
 		host     = net.ParseIP("127.0.0.1")
 		port     = 8080
+		program  = "demo"
+		version  = "0.0.1"
 	)
 
 	errors := make(chan error, 100)
 
-	config := libkflow.NewConfig(email, token)
+	config := libkflow.NewConfig(email, token, program, version)
 	config.SetServer(host, port)
 	config.SetVerbose(1)
 

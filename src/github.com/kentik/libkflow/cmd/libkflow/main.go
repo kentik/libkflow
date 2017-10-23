@@ -50,8 +50,14 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		email   = C.GoString(cfg.API.email)
 		token   = C.GoString(cfg.API.token)
 		timeout = time.Duration(cfg.timeout) * time.Millisecond
+		program = C.GoString(cfg.program)
+		version = C.GoString(cfg.version)
 		proxy   *url.URL
 	)
+
+	if program == "" || version == "" {
+		return C.EKFLOWCONFIG
+	}
 
 	if cfg.proxy.URL != nil {
 		proxy, err = url.Parse(C.GoString(cfg.proxy.URL))
@@ -61,7 +67,7 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		}
 	}
 
-	config := libkflow.NewConfig(email, token)
+	config := libkflow.NewConfig(email, token, program, version)
 	config.SetCapture(libkflow.Capture{
 		Device:  C.GoString(cfg.capture.device),
 		Snaplen: int32(cfg.capture.snaplen),

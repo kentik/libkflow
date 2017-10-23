@@ -18,10 +18,11 @@ const (
 )
 
 type Metrics struct {
-	agg.Metrics
+	Extra   map[string]string
+	Metrics agg.Metrics
 }
 
-func newMetrics(clientid string) *Metrics {
+func newMetrics(clientid, program, version string) *Metrics {
 	clientid = strings.Replace(clientid, ":", ".", -1)
 
 	name := func(key string) string {
@@ -32,8 +33,16 @@ func newMetrics(clientid string) *Metrics {
 		return metrics.NewExpDecaySample(MetricsSampleSize, MetricsSampleAlpha)
 	}
 
+	extra := map[string]string{
+		"ver":   program + "-" + version,
+		"ft":    program,
+		"dt":    "libkflow",
+		"level": "primary",
+	}
+
 	return &Metrics{
-		agg.Metrics{
+		Extra: extra,
+		Metrics: agg.Metrics{
 			TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), nil),
 			TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), nil),
 			OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
@@ -44,13 +53,6 @@ func newMetrics(clientid string) *Metrics {
 }
 
 func (m *Metrics) start(url, email, token string, interval time.Duration, proxy *url.URL) {
-	extra := map[string]string{
-		"ver":   "libkflow-" + Version,
-		"ft":    "nprobe",
-		"dt":    "libkflow",
-		"level": "primary",
-	}
-
 	proxyURL := ""
 	if proxy != nil {
 		proxyURL = proxy.String()
@@ -66,7 +68,7 @@ func (m *Metrics) start(url, email, token string, interval time.Duration, proxy 
 		Send:               make(chan []byte, MaxHttpRequests),
 		ProxyUrl:           proxyURL,
 		MaxHttpOutstanding: MaxHttpRequests,
-		Extra:              extra,
+		Extra:              m.Extra,
 		ApiEmail:           &email,
 		ApiPassword:        &token,
 	})

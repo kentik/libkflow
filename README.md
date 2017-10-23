@@ -10,7 +10,7 @@ methods, along with the appropriate device identifier and an error
 channel which may be polled for asynchronous errors.
 
     errors := make(chan error, 100)
-    config := libkflow.NewConfig("email", "token")
+    config := libkflow.NewConfig("email", "token", "program", "1.0.0")
     s, err := libkflow.NewSenderWithDeviceID(0, errors, config)
 	s.Send(&flow.Flow{
 		Ipv4SrcAddr: src,

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"math/rand"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/kentik/libkflow/api"
@@ -14,7 +15,7 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 		email  = randstr(8)
 		token  = randstr(8)
 		device = &api.Device{
-			ID:          int(rand.Uint32()),
+			ID:          int(nextid()),
 			Name:        randstr(8),
 			IP:          net.ParseIP("127.0.0.1"),
 			MaxFlowRate: 10,
@@ -53,3 +54,9 @@ func randstr(n int) string {
 	rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
 }
+
+func nextid() uint64 {
+	return atomic.AddUint64(&counter, 1)
+}
+
+var counter uint64 = 0

@@ -20,6 +20,8 @@ int main(int argc, char **argv) {
         },
         .device_id = 1,
         .verbose   = 1,
+        .program   = "demo",
+        .version   = "0.0.1",
     };
     kflowCustom *customs;
     uint32_t numCustoms;

@@ -22,6 +22,8 @@ type Config struct {
 	metrics *url.URL
 	verbose int
 	timeout time.Duration
+	program string
+	version string
 }
 
 // Capture describes the packet capture settings.
@@ -31,9 +33,10 @@ type Capture struct {
 	Promisc bool
 }
 
-// NewConfig returns a new Config given an API access email and token.
-func NewConfig(email, token string) *Config {
-	return defaultConfig(email, token)
+// NewConfig returns a new Config given an API access email and token,
+// and the name and version of the program using libkflow.
+func NewConfig(email, token, program, version string) *Config {
+	return defaultConfig(email, token, program, version)
 }
 
 // SetCapture sets the packet capture details.
@@ -83,6 +86,10 @@ func (c *Config) OverrideURLs(api, flow, metrics *url.URL) {
 	c.metrics = metrics
 }
 
+func (c *Config) NewMetrics(dev *api.Device) *Metrics {
+	return newMetrics(dev.ClientID(), c.program, c.version)
+}
+
 func (c *Config) client() *api.Client {
 	return api.NewClient(api.ClientConfig{
 		Email:   c.email,
@@ -95,7 +102,7 @@ func (c *Config) client() *api.Client {
 
 func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error) (*Sender, error) {
 	interval := time.Duration(1) * time.Minute
-	metrics := newMetrics(dev.ClientID())
+	metrics := c.NewMetrics(dev)
 	metrics.start(c.metrics.String(), c.email, c.token, interval, c.proxy)
 
 	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, &metrics.Metrics)
@@ -125,7 +132,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 	return sender, nil
 }
 
-func defaultConfig(email, token string) *Config {
+func defaultConfig(email, token, program, version string) *Config {
 	return &Config{
 		email:   email,
 		token:   token,
@@ -136,6 +143,8 @@ func defaultConfig(email, token string) *Config {
 		metrics: parseURL("https://flow.kentik.com/tsdb"),
 		verbose: 0,
 		timeout: 10 * time.Second,
+		program: program,
+		version: version,
 	}
 }
 

@@ -34,6 +34,8 @@ typedef struct {
     char *device_ip;             // Kentik device IP
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level
+    char *program;               // program name
+    char *version;               // program version
 } kflowConfig;
 
 // struct kflowCustom defines a custom flow field which may

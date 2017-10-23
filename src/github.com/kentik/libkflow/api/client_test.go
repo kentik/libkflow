@@ -73,13 +73,12 @@ func TestGetInvalidDevice(t *testing.T) {
 
 	_, err = client.GetDeviceByName(device.Name + "-invalid")
 	assert.Error(err)
-	assert.True(api.IsErrorWithStatusCode(err, 404), err)
+	assert.True(api.IsErrorWithStatusCode(err, 404))
 
 	_, err = client.GetDeviceByIF("invalid")
 	assert.Error(err)
 
-	ip := append(make([]byte, 1, 16), device.IP[1:]...)
-	_, err = client.GetDeviceByIP(ip)
+	_, err = client.GetDeviceByIP(net.ParseIP("0.0.0.0"))
 	assert.Error(err)
-	assert.True(api.IsErrorWithStatusCode(err, 404), err)
+	assert.True(api.IsErrorWithStatusCode(err, 404))
 }

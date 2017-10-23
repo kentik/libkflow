@@ -36,6 +36,20 @@ func TestInitInvalidConfig(t *testing.T) {
 	assert.Equal(EKFLOWCONFIG, n)
 }
 
+func TestInitMissingProgram(t *testing.T) {
+	cfg, assert := setupMainTest(t)
+	cfg.program = nil
+	n := int(kflowInit(cfg, nil, nil))
+	assert.Equal(EKFLOWCONFIG, n)
+}
+
+func TestInitMissingVersion(t *testing.T) {
+	cfg, assert := setupMainTest(t)
+	cfg.version = nil
+	n := int(kflowInit(cfg, nil, nil))
+	assert.Equal(EKFLOWCONFIG, n)
+}
+
 func TestInitInvalidAuth(t *testing.T) {
 	cfg, assert := setupMainTest(t)
 	cfg.API.email = nil
@@ -70,6 +84,8 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 	email = append([]byte(client.Email))
 	token = append([]byte(client.Token))
 	deviceip = append([]byte(device.IP.String()), 0)
+	program = append([]byte("test"), 0)
+	version = append([]byte("0.0.1"), 0)
 
 	cfg := _Ctype_struct___3{
 		API: _Ctype_struct___4{
@@ -79,6 +95,8 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 		},
 		device_id: _Ctype_int(device.ID),
 		device_ip: (*_Ctype_char)(unsafe.Pointer(&deviceip[0])),
+		program:   (*_Ctype_char)(unsafe.Pointer(&program[0])),
+		version:   (*_Ctype_char)(unsafe.Pointer(&version[0])),
 	}
 
 	return &cfg, assert
@@ -89,4 +107,6 @@ var (
 	email    []byte
 	token    []byte
 	deviceip []byte
+	program  []byte
+	version  []byte
 )
