@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
         .API = {
             .email = "test@example.com",
             .token = "token",
-            .URL   = "http://127.0.0.1:8999/api/v5",
+            .URL   = "http://127.0.0.1:8999/api/internal",
         },
         .metrics = {
             .interval = 1,
@@ -23,13 +23,18 @@ int main(int argc, char **argv) {
         .program   = "demo",
         .version   = "0.0.1",
     };
+
+    kflowDevice device;
     kflowCustom *customs;
     uint32_t numCustoms;
 
-    if ((r = kflowInit(&cfg, &customs, &numCustoms)) != 0) {
+    if ((r = kflowInit(&cfg, &device)) != 0) {
         printf("error initializing libkflow: %d\n", r);
         goto error;
     };
+
+    customs    = device.customs;
+    numCustoms = device.num_customs;
 
     char *url = "http://foo.com";
 

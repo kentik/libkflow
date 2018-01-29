@@ -53,6 +53,16 @@ typedef struct {
     } value;                     // field value
 } kflowCustom;
 
+// struct kflowDevice describes the Kentik device selected
+// by a call to kflowInit(...).
+typedef struct {
+    uint64_t id;                 // device ID
+    char *name;                  // device name
+    uint64_t sample_rate;        // sample rate
+    kflowCustom *customs;        // custom field
+    uint32_t num_customs;        // field count
+} kflowDevice;
+
 // kflow custom field names:
 
 #define KFLOWCUSTOM_RETRANSMITTED_IN_PKTS   "RETRANSMITTED_IN_PKTS"
@@ -159,7 +169,7 @@ typedef struct {
 // kflowCustom structs containing the custom columns supported
 // by the configured device, which must be freed by the caller.
 // kflowInit returns 0 on success or an error code on failure.
-int kflowInit(kflowConfig *, kflowCustom **, uint32_t *);
+int kflowInit(kflowConfig *, kflowDevice *);
 
 // kflowSend asynchronously dispatches a kflow record to the
 // server. All fields of the record are copied and may be

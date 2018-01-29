@@ -15,6 +15,7 @@ type Device struct {
 	Name        string   `json:"device_name"`
 	IP          net.IP   `json:"ip"`
 	MaxFlowRate int      `json:"max_flow_rate"`
+	SampleRate  int      `json:"device_sample_rate,string"`
 	CompanyID   int      `json:"company_id,string"`
 	Customs     []Column `json:"custom_column_data,omitempty"`
 }

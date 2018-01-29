@@ -18,7 +18,8 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 			ID:          int(nextid()),
 			Name:        randstr(8),
 			IP:          net.ParseIP("127.0.0.1"),
-			MaxFlowRate: 10,
+			MaxFlowRate: int(rand.Uint32()),
+			SampleRate:  int(rand.Uint32()),
 			CompanyID:   int(rand.Uint32()),
 		}
 	)

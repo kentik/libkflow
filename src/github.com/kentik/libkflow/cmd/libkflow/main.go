@@ -21,7 +21,7 @@ var sender *libkflow.Sender
 var errors chan error
 
 //export kflowInit
-func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int {
+func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 	errors = make(chan error, 100)
 
 	if cfg == nil {
@@ -105,7 +105,10 @@ func kflowInit(cfg *C.kflowConfig, customs **C.kflowCustom, n *C.uint32_t) C.int
 		}
 	}
 
-	populateCustoms(sender.Device, customs, n)
+	dev.id = C.uint64_t(sender.Device.ID)
+	dev.name = C.CString(sender.Device.Name)
+	dev.sample_rate = C.uint64_t(sender.Device.SampleRate)
+	populateCustoms(sender.Device, &dev.customs, &dev.num_customs)
 
 	signal.Ignore(syscall.SIGPIPE)
 
@@ -204,3 +207,7 @@ const (
 	EKFLOWAUTH     = C.EKFLOWAUTH
 	EKFLOWNODEVICE = C.EKFLOWNODEVICE
 )
+
+type KflowConfig C.kflowConfig
+type KflowCustom C.kflowCustom
+type KflowDevice C.kflowDevice

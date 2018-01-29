@@ -1,79 +1,92 @@
 package main
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 	"unsafe"
 
+	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInit(t *testing.T) {
-	var n int
-	cfg, assert := setupMainTest(t)
+	var (
+		n   int
+		dev KflowDevice
+	)
+	cfg, apidev, assert := setupMainTest(t)
 
 	// init with device ID
-	n = int(kflowInit(cfg, nil, nil))
+	n = int(kflowInit(cfg, &dev))
 	assert.Equal(0, n)
 
 	// init with device IP
 	cfg.device_id = 0
-	n = int(kflowInit(cfg, nil, nil))
+	n = int(kflowInit(cfg, &dev))
 	assert.Equal(0, n)
+
+	assert.Equal(apidev.ID, int(dev.id))
+	assert.Equal(apidev.Name, cstr(dev.name))
+	assert.Equal(apidev.SampleRate, int(dev.sample_rate))
 }
 
 func TestInitInvalidConfig(t *testing.T) {
-	var n int
+	var (
+		n   int
+		dev KflowDevice
+	)
 	assert := assert.New(t)
 
 	// NULL config
-	n = int(kflowInit(nil, nil, nil))
+	n = int(kflowInit(nil, &dev))
 	assert.Equal(EKFLOWCONFIG, n)
 
 	// NULL API URL
-	cfg := _Ctype_struct___3{}
-	n = int(kflowInit(&cfg, nil, nil))
+	cfg := KflowConfig{}
+	n = int(kflowInit(&cfg, &dev))
 	assert.Equal(EKFLOWCONFIG, n)
 }
 
 func TestInitMissingProgram(t *testing.T) {
-	cfg, assert := setupMainTest(t)
+	cfg, _, assert := setupMainTest(t)
 	cfg.program = nil
-	n := int(kflowInit(cfg, nil, nil))
+	n := int(kflowInit(cfg, &KflowDevice{}))
 	assert.Equal(EKFLOWCONFIG, n)
 }
 
 func TestInitMissingVersion(t *testing.T) {
-	cfg, assert := setupMainTest(t)
+	cfg, _, assert := setupMainTest(t)
 	cfg.version = nil
-	n := int(kflowInit(cfg, nil, nil))
+	n := int(kflowInit(cfg, &KflowDevice{}))
 	assert.Equal(EKFLOWCONFIG, n)
 }
 
 func TestInitInvalidAuth(t *testing.T) {
-	cfg, assert := setupMainTest(t)
+	cfg, _, assert := setupMainTest(t)
 	cfg.API.email = nil
-	n := int(kflowInit(cfg, nil, nil))
+	n := int(kflowInit(cfg, &KflowDevice{}))
 	assert.Equal(EKFLOWAUTH, n)
 }
 
 func TestInitInvalidDevice(t *testing.T) {
 	var n int
-	cfg, assert := setupMainTest(t)
+	cfg, _, assert := setupMainTest(t)
 
 	// invalid device ID
 	cfg.device_id = cfg.device_id + 1
-	n = int(kflowInit(cfg, nil, nil))
+	n = int(kflowInit(cfg, &KflowDevice{}))
 	assert.Equal(EKFLOWNODEVICE, n)
 
 	// invalid device IP
 	cfg.device_id = 0
 	cfg.device_ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[1]))
-	n = int(kflowInit(cfg, nil, nil))
+	n = int(kflowInit(cfg, &KflowDevice{}))
 	assert.Equal(EKFLOWNODEVICE, n)
 }
 
-func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
+func setupMainTest(t *testing.T) (*KflowConfig, *api.Device, *assert.Assertions) {
 	client, server, device, err := test.NewClientServer()
 	if err != nil {
 		t.Fatal(err)
@@ -87,7 +100,7 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 	program = append([]byte("test"), 0)
 	version = append([]byte("0.0.1"), 0)
 
-	cfg := _Ctype_struct___3{
+	cfg := KflowConfig{
 		API: _Ctype_struct___4{
 			email: (*_Ctype_char)(unsafe.Pointer(&email[0])),
 			token: (*_Ctype_char)(unsafe.Pointer(&token[0])),
@@ -99,7 +112,16 @@ func setupMainTest(t *testing.T) (*_Ctype_struct___3, *assert.Assertions) {
 		version:   (*_Ctype_char)(unsafe.Pointer(&version[0])),
 	}
 
-	return &cfg, assert
+	return &cfg, device, assert
+}
+
+func cstr(c *_Ctype_char) string {
+	str := *(*string)(unsafe.Pointer(&reflect.StringHeader{
+		Data: uintptr(unsafe.Pointer(c)),
+		Len:  1 << 31,
+	}))
+	idx := strings.IndexByte(str, 0)
+	return string(str[:idx])
 }
 
 var (
