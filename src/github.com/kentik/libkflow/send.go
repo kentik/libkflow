@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -20,6 +21,7 @@ type Sender struct {
 	url     *url.URL
 	timeout time.Duration
 	client  *api.Client
+	sample  int
 	verbose int
 	ticker  *time.Ticker
 	workers sync.WaitGroup
@@ -120,22 +122,28 @@ func (s *Sender) monitor() {
 
 func (s *Sender) update() {
 	for range s.ticker.C {
-		var fps int
-
-		switch updated, err := s.client.GetDeviceByID(s.Device.ID); {
-		case err == nil:
-			fps = updated.MaxFlowRate
-		case api.IsErrorWithStatusCode(err, 404):
-			fps = 0
-		default:
-			s.debug("device API request failed: %s", err)
-			continue
+		updated, err := s.client.GetDeviceByID(s.Device.ID)
+		if err != nil {
+			if api.IsErrorWithStatusCode(err, 404) {
+				updated = &api.Device{}
+			} else {
+				s.debug("device API request failed: %s", err)
+				continue
+			}
 		}
 
-		if s.Device.MaxFlowRate != fps {
-			s.debug("updating max FPS to %d", fps)
-			s.agg.Configure(fps)
-			s.Device.MaxFlowRate = fps
+		if s.Device.MaxFlowRate != updated.MaxFlowRate {
+			s.debug("updating max FPS to %d", updated.MaxFlowRate)
+			s.Device.MaxFlowRate = updated.MaxFlowRate
+			s.agg.Configure(updated.MaxFlowRate)
+		}
+
+		// if the configured sample rate is 0 then the sender
+		// may be using the device sample rate which has just
+		// changed, so abort the program
+		if s.sample == 0 && s.Device.SampleRate != updated.SampleRate {
+			s.debug("device sample rate changed, aborting")
+			os.Exit(1)
 		}
 	}
 }

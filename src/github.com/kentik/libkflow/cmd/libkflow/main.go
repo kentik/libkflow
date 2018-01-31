@@ -74,6 +74,7 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 		Promisc: cfg.capture.promisc == 1,
 	})
 	config.SetProxy(proxy)
+	config.SetSampleRate(int(cfg.sample_rate))
 	config.SetTimeout(timeout)
 	config.SetVerbose(int(cfg.verbose))
 	config.OverrideURLs(apiurl, flowurl, metricsurl)

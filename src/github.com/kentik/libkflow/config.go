@@ -20,6 +20,7 @@ type Config struct {
 	api     *url.URL
 	flow    *url.URL
 	metrics *url.URL
+	sample  int
 	verbose int
 	timeout time.Duration
 	program string
@@ -78,6 +79,13 @@ func (c *Config) SetVerbose(verbose int) {
 	c.verbose = verbose
 }
 
+// SetSampleRate sets the configured sample rate. If the sample rate
+// is not set, and the rate configured in the device settings changes,
+// then libkflow will abort the program with a call to exit().
+func (c *Config) SetSampleRate(sample int) {
+	c.sample = sample
+}
+
 // OverrideURLs changes the default endpoint URL for API requests,
 // flow, and metrics.
 func (c *Config) OverrideURLs(api, flow, metrics *url.URL) {
@@ -112,6 +120,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 
 	sender := newSender(c.flow, c.timeout, c.verbose)
 	sender.Errors = errors
+	sender.sample = c.sample
 
 	if c.capture.Device != "" {
 		nif, err := net.InterfaceByName(c.capture.Device)

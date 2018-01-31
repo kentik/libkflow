@@ -32,6 +32,7 @@ typedef struct {
     int device_id;               // Kentik device ID
     char *device_if;             // Kentik device interface name
     char *device_ip;             // Kentik device IP
+    int sample_rate;             // optional configured sample rate
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level
     char *program;               // program name
