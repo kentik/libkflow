@@ -68,6 +68,26 @@ func NewSenderWithDeviceIP(dip net.IP, errors chan<- error, cfg *Config) (*Sende
 	return s, nil
 }
 
+// Creates the device if it doesn't already exist
+func NewSenderWithDeviceIPAndNameForceCreate(dip net.IP, name string, sampleRate int, deviceType string, planId int, errors chan<- error, cfg *Config) (*Sender, error) {
+	client := cfg.client()
+
+	d, err := lookupdev(client.GetDeviceByIP(dip))
+	if err != nil {
+		d, err = lookupdev(client.CreateDeviceByIPAndName(dip, name, sampleRate, deviceType, planId))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	s, err := cfg.start(client, d, errors)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 func lookupdev(dev *api.Device, err error) (*api.Device, error) {
 	if err != nil {
 		switch {
