@@ -12,11 +12,11 @@ import (
 
 func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 	var (
-		email  = randstr(8)
-		token  = randstr(8)
+		email  = RandStr(8)
+		token  = RandStr(8)
 		device = &api.Device{
 			ID:          int(nextid()),
-			Name:        randstr(8),
+			Name:        RandStr(8),
 			IP:          net.ParseIP("127.0.0.1"),
 			MaxFlowRate: int(rand.Uint32()),
 			SampleRate:  int(rand.Uint32()),
@@ -50,7 +50,7 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 	return client, server, device, nil
 }
 
-func randstr(n int) string {
+func RandStr(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
