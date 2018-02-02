@@ -133,7 +133,7 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(&api.DeviceResponse{
+	err := json.NewEncoder(w).Encode(&api.DeviceWrapper{
 		Device: s.Device,
 	})
 

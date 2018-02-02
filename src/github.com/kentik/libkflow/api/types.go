@@ -6,10 +6,6 @@ import (
 	"net"
 )
 
-type DeviceResponse struct {
-	Device *Device `json:"device"`
-}
-
 type Device struct {
 	ID          int      `json:"id,string"`
 	Name        string   `json:"device_name"`
@@ -24,6 +20,21 @@ type Column struct {
 	ID   uint64 `json:"field_id,string"`
 	Name string `json:"col_name"`
 	Type string `json:"col_type"`
+}
+
+type DeviceCreate struct {
+	Name        string   `json:"device_name"`
+	Type        string   `json:"device_type"`
+	Description string   `json:"device_description"`
+	SampleRate  int      `json:"device_sample_rate,string"`
+	BgpType     string   `json:"device_bgp_type"`
+	PlanID      int      `json:"plan_id"`
+	IPs         []net.IP `json:"sending_ips"`
+	CdnAttr     string   `json:"cdn_attr"`
+}
+
+type DeviceWrapper struct {
+	Device *Device `json:"device"`
 }
 
 type Interface struct {
