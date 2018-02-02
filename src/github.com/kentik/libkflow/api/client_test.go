@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"math/rand"
 	"net"
 	"testing"
 
@@ -81,4 +82,24 @@ func TestGetInvalidDevice(t *testing.T) {
 	_, err = client.GetDeviceByIP(net.ParseIP("0.0.0.0"))
 	assert.Error(err)
 	assert.True(api.IsErrorWithStatusCode(err, 404))
+}
+
+func TestCreateDevice(t *testing.T) {
+	client, _, _, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+
+	ip := net.ParseIP("127.0.0.1")
+	name := test.RandStr(8)
+	sampleRate := int(rand.Uint32())
+	deviceType := test.RandStr(8)
+	planID := int(rand.Uint32())
+
+	device, err := client.CreateDeviceByIPAndName(ip, name, sampleRate, deviceType, planID)
+
+	assert.NoError(err)
+	assert.EqualValues(name, device.Name)
+	assert.EqualValues(sampleRate, device.SampleRate)
 }

@@ -93,6 +93,7 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.Device = dev
 
 	s.mux.HandleFunc(API+"/device/{did}", s.wrap(s.device))
+	s.mux.HandleFunc(API+"/device/", s.wrap(s.create))
 	s.mux.HandleFunc(API+"/device/{did}/interfaces", s.wrap(s.interfaces))
 	s.mux.HandleFunc(API+"/company/{cid}/device/{did}/tags/snmp", s.wrap(s.update))
 	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
@@ -140,6 +141,37 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(http.StatusInternalServerError)
 	}
+}
+
+func (s *Server) create(w http.ResponseWriter, r *http.Request) {
+	wrapper := map[string]*api.DeviceCreate{"device": &api.DeviceCreate{}}
+
+	if err := json.NewDecoder(r.Body).Decode(&wrapper); err != nil {
+		panic(http.StatusInternalServerError)
+	}
+
+	id, _ := rand.Int(rand.Reader, big.NewInt(65535))
+	create := wrapper["device"]
+	device := &api.Device{
+		ID:          int(id.Int64()),
+		Name:        create.Name,
+		MaxFlowRate: s.Device.MaxFlowRate,
+		SampleRate:  create.SampleRate,
+		CompanyID:   s.Device.MaxFlowRate,
+		Customs:     s.Device.Customs,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err := json.NewEncoder(w).Encode(&api.DeviceWrapper{
+		Device: device,
+	})
+
+	if err != nil {
+		panic(http.StatusInternalServerError)
+	}
+
+	s.Device = device
 }
 
 func (s *Server) interfaces(w http.ResponseWriter, r *http.Request) {
