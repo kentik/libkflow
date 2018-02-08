@@ -89,6 +89,9 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 	case cfg.device_ip != nil:
 		dip := net.ParseIP(C.GoString(cfg.device_ip))
 		sender, err = libkflow.NewSenderWithDeviceIP(dip, errors, config)
+	case cfg.device_name != nil:
+		name := C.GoString(cfg.device_name)
+		sender, err = libkflow.NewSenderWithDeviceName(name, errors, config)
 	default:
 		fail("no device identifier supplied")
 		return C.EKFLOWCONFIG

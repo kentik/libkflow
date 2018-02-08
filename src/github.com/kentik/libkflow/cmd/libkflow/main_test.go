@@ -27,6 +27,11 @@ func TestInit(t *testing.T) {
 	n = int(kflowInit(cfg, &dev))
 	assert.Equal(0, n)
 
+	// init with device name
+	cfg.device_ip = nil
+	n = int(kflowInit(cfg, &dev))
+	assert.Equal(0, n)
+
 	assert.Equal(apidev.ID, int(dev.id))
 	assert.Equal(apidev.Name, cstr(dev.name))
 	assert.Equal(apidev.SampleRate, int(dev.sample_rate))
@@ -97,6 +102,7 @@ func setupMainTest(t *testing.T) (*KflowConfig, *api.Device, *assert.Assertions)
 	email = append([]byte(client.Email))
 	token = append([]byte(client.Token))
 	deviceip = append([]byte(device.IP.String()), 0)
+	devicename = append([]byte(device.Name), 0)
 	program = append([]byte("test"), 0)
 	version = append([]byte("0.0.1"), 0)
 
@@ -106,10 +112,11 @@ func setupMainTest(t *testing.T) (*KflowConfig, *api.Device, *assert.Assertions)
 			token: (*_Ctype_char)(unsafe.Pointer(&token[0])),
 			URL:   (*_Ctype_char)(unsafe.Pointer(&apiurl[0])),
 		},
-		device_id: _Ctype_int(device.ID),
-		device_ip: (*_Ctype_char)(unsafe.Pointer(&deviceip[0])),
-		program:   (*_Ctype_char)(unsafe.Pointer(&program[0])),
-		version:   (*_Ctype_char)(unsafe.Pointer(&version[0])),
+		device_id:   _Ctype_int(device.ID),
+		device_ip:   (*_Ctype_char)(unsafe.Pointer(&deviceip[0])),
+		device_name: (*_Ctype_char)(unsafe.Pointer(&devicename[0])),
+		program:     (*_Ctype_char)(unsafe.Pointer(&program[0])),
+		version:     (*_Ctype_char)(unsafe.Pointer(&version[0])),
 	}
 
 	return &cfg, device, assert
@@ -125,10 +132,11 @@ func cstr(c *_Ctype_char) string {
 }
 
 var (
-	apiurl   []byte
-	email    []byte
-	token    []byte
-	deviceip []byte
-	program  []byte
-	version  []byte
+	apiurl     []byte
+	email      []byte
+	token      []byte
+	deviceip   []byte
+	devicename []byte
+	program    []byte
+	version    []byte
 )
