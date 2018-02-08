@@ -68,6 +68,24 @@ func NewSenderWithDeviceIP(dip net.IP, errors chan<- error, cfg *Config) (*Sende
 	return s, nil
 }
 
+// NewSenderWithDeviceName creates a new flow Sender given a device name address,
+// error channel, and Config.
+func NewSenderWithDeviceName(name string, errors chan<- error, cfg *Config) (*Sender, error) {
+	client := cfg.client()
+
+	d, err := lookupdev(client.GetDeviceByName(name))
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := cfg.start(client, d, errors)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // Creates the device if it doesn't already exist
 func NewSenderWithDeviceIPAndNameForceCreate(dip net.IP, name string, sampleRate int, deviceType string, planId int, errors chan<- error, cfg *Config) (*Sender, error) {
 	client := cfg.client()
