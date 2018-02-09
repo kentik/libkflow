@@ -91,15 +91,26 @@ func TestCreateDevice(t *testing.T) {
 	}
 	assert := assert.New(t)
 
-	ip := net.ParseIP("127.0.0.1")
-	name := test.RandStr(8)
-	sampleRate := int(rand.Uint32())
-	deviceType := test.RandStr(8)
-	planID := int(rand.Uint32())
+	create := &api.DeviceCreate{
+		Name:        test.RandStr(8),
+		Type:        test.RandStr(8),
+		Description: test.RandStr(8),
+		SampleRate:  int(rand.Uint32()),
+		BgpType:     test.RandStr(4),
+		PlanID:      int(rand.Uint32()),
+		IPs:         []net.IP{net.ParseIP("127.0.0.1")},
+		CdnAttr:     test.RandStr(1),
+	}
 
-	device, err := client.CreateDeviceByIPAndName(ip, name, sampleRate, deviceType, planID)
-
+	device, err := client.CreateDevice(create)
 	assert.NoError(err)
-	assert.EqualValues(name, device.Name)
-	assert.EqualValues(sampleRate, device.SampleRate)
+
+	assert.EqualValues(create.Name, device.Name)
+	assert.EqualValues(create.Type, device.Type)
+	assert.EqualValues(create.Description, device.Description)
+	assert.EqualValues(create.IPs[0], device.IP)
+	assert.EqualValues(create.SampleRate, device.SampleRate)
+	assert.EqualValues(create.BgpType, device.BgpType)
+	assert.EqualValues(create.PlanID, int(device.Plan.ID))
+	assert.EqualValues(create.CdnAttr, device.CdnAttr)
 }

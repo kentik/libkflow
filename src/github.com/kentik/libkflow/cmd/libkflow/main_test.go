@@ -37,6 +37,24 @@ func TestInit(t *testing.T) {
 	assert.Equal(apidev.SampleRate, int(dev.sample_rate))
 }
 
+func TestInitCreateDevice(t *testing.T) {
+	var dev KflowDevice
+	cfg, apidev, assert := setupMainTest(t)
+
+	name := test.RandStr(8)
+	devicename = append([]byte(name), 0)
+
+	cfg.device_id = 0
+	cfg.device_ip = nil
+	cfg.device_name = (*_Ctype_char)(unsafe.Pointer(&devicename[0]))
+
+	n := int(kflowInit(cfg, &dev))
+	assert.Equal(0, n)
+
+	assert.Equal(name, cstr(dev.name))
+	assert.NotEqual(apidev.Name, cstr(dev.name))
+}
+
 func TestInitInvalidConfig(t *testing.T) {
 	var (
 		n   int

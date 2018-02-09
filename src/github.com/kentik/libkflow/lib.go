@@ -24,12 +24,7 @@ func NewSenderWithDeviceID(did int, errors chan<- error, cfg *Config) (*Sender, 
 		return nil, err
 	}
 
-	s, err := cfg.start(client, d, errors)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return cfg.start(client, d, errors)
 }
 
 // NewSenderWithDeviceIF creates a new flow Sender given a device interface name,
@@ -42,12 +37,7 @@ func NewSenderWithDeviceIF(dif string, errors chan<- error, cfg *Config) (*Sende
 		return nil, err
 	}
 
-	s, err := cfg.start(client, d, errors)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return cfg.start(client, d, errors)
 }
 
 // NewSenderWithDeviceIP creates a new flow Sender given a device IP address,
@@ -60,12 +50,7 @@ func NewSenderWithDeviceIP(dip net.IP, errors chan<- error, cfg *Config) (*Sende
 		return nil, err
 	}
 
-	s, err := cfg.start(client, d, errors)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return cfg.start(client, d, errors)
 }
 
 // NewSenderWithDeviceName creates a new flow Sender given a device name address,
@@ -78,32 +63,21 @@ func NewSenderWithDeviceName(name string, errors chan<- error, cfg *Config) (*Se
 		return nil, err
 	}
 
-	s, err := cfg.start(client, d, errors)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return cfg.start(client, d, errors)
 }
 
-// Creates the device if it doesn't already exist
-func NewSenderWithDeviceIPAndNameForceCreate(dip net.IP, name string, sampleRate int, deviceType string, planId int, errors chan<- error, cfg *Config) (*Sender, error) {
+// NewSenderWithNewDevice creates a new device given device creation parameters,
+// and then creates a new flow Sender with that device, the error channel, and
+// the Config.
+func NewSenderWithNewDevice(dev *api.DeviceCreate, errors chan<- error, cfg *Config) (*Sender, error) {
 	client := cfg.client()
 
-	d, err := lookupdev(client.GetDeviceByIP(dip))
-	if err != nil {
-		d, err = lookupdev(client.CreateDeviceByIPAndName(dip, name, sampleRate, deviceType, planId))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	s, err := cfg.start(client, d, errors)
+	d, err := client.CreateDevice(dev)
 	if err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return cfg.start(client, d, errors)
 }
 
 func lookupdev(dev *api.Device, err error) (*api.Device, error) {

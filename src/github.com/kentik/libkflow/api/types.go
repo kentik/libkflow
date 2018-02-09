@@ -9,11 +9,21 @@ import (
 type Device struct {
 	ID          int      `json:"id,string"`
 	Name        string   `json:"device_name"`
+	Type        string   `json:"device_type"`
+	Description string   `json:"device_description"`
 	IP          net.IP   `json:"ip"`
-	MaxFlowRate int      `json:"max_flow_rate"`
 	SampleRate  int      `json:"device_sample_rate,string"`
+	BgpType     string   `json:"device_bgp_type"`
+	Plan        Plan     `json:"plan"`
+	CdnAttr     string   `json:"cdn_attr"`
+	MaxFlowRate int      `json:"max_flow_rate"`
 	CompanyID   int      `json:"company_id,string"`
 	Customs     []Column `json:"custom_column_data,omitempty"`
+}
+
+type Plan struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
 }
 
 type Column struct {
