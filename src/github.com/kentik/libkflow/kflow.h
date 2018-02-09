@@ -18,6 +18,7 @@ typedef struct {
         char *device;            // network device name
         int snaplen;             // snapshot length
         int promisc;             // promiscuous mode
+        char *ip;                // device IP address
     } capture;
 
     struct {
@@ -33,6 +34,7 @@ typedef struct {
     char *device_if;             // Kentik device interface name
     char *device_ip;             // Kentik device IP
     char *device_name;           // Kentik device name
+    int device_plan;             // Kentik device plan ID
     int sample_rate;             // optional configured sample rate
     int timeout;                 // flow sending timeout (ms)
     int verbose;                 // logging verbosity level

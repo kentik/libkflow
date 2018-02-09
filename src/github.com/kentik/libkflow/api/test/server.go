@@ -150,14 +150,25 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		panic(http.StatusInternalServerError)
 	}
 
-	id, _ := rand.Int(rand.Reader, big.NewInt(65535))
 	create := wrapper["device"]
+
+	plan := api.Plan{
+		ID: uint64(create.PlanID),
+	}
+
+	id, _ := rand.Int(rand.Reader, big.NewInt(65535))
 	device := &api.Device{
 		ID:          int(id.Int64()),
 		Name:        create.Name,
-		MaxFlowRate: s.Device.MaxFlowRate,
+		Type:        create.Type,
+		Description: create.Description,
+		IP:          create.IPs[0],
 		SampleRate:  create.SampleRate,
-		CompanyID:   s.Device.MaxFlowRate,
+		BgpType:     create.BgpType,
+		Plan:        plan,
+		CdnAttr:     create.CdnAttr,
+		MaxFlowRate: s.Device.MaxFlowRate,
+		CompanyID:   s.Device.CompanyID,
 		Customs:     s.Device.Customs,
 	}
 

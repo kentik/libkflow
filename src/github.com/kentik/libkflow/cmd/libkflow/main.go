@@ -92,6 +92,9 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 	case cfg.device_name != nil:
 		name := C.GoString(cfg.device_name)
 		sender, err = libkflow.NewSenderWithDeviceName(name, errors, config)
+		if err == libkflow.ErrInvalidDevice {
+			sender, err = tryCreateDevice(cfg, errors, config)
+		}
 	default:
 		fail("no device identifier supplied")
 		return C.EKFLOWCONFIG
@@ -158,6 +161,20 @@ func kflowError() *C.char {
 //export kflowVersion
 func kflowVersion() *C.char {
 	return C.CString(libkflow.Version)
+}
+
+func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Config) (*libkflow.Sender, error) {
+	ip := net.ParseIP(C.GoString(cfg.capture.ip))
+	return libkflow.NewSenderWithNewDevice(&api.DeviceCreate{
+		Name:        C.GoString(cfg.device_name),
+		Type:        "host-nprobe-dns-www",
+		Description: C.GoString(cfg.device_name),
+		SampleRate:  1,
+		BgpType:     "none",
+		PlanID:      int(cfg.device_plan),
+		IPs:         []net.IP{ip},
+		CdnAttr:     "N",
+	}, errors, config)
 }
 
 func populateCustoms(device *api.Device, ptr **C.kflowCustom, cnt *C.uint32_t) {
