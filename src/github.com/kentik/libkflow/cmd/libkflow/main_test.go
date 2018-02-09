@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math/rand"
+	"net"
 	"reflect"
 	"strings"
 	"testing"
@@ -37,16 +39,42 @@ func TestInit(t *testing.T) {
 	assert.Equal(apidev.SampleRate, int(dev.sample_rate))
 }
 
-func TestInitCreateDevice(t *testing.T) {
+func TestInitCreateDeviceWithName(t *testing.T) {
 	var dev KflowDevice
 	cfg, apidev, assert := setupMainTest(t)
 
 	name := test.RandStr(8)
+	ip := randip()
 	devicename = append([]byte(name), 0)
+	deviceip = append([]byte(ip.String()), 0)
 
+	cfg.capture.ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[0]))
 	cfg.device_id = 0
 	cfg.device_ip = nil
 	cfg.device_name = (*_Ctype_char)(unsafe.Pointer(&devicename[0]))
+	cfg.device_plan = _Ctype_int(rand.Uint32())
+
+	n := int(kflowInit(cfg, &dev))
+	assert.Equal(0, n)
+
+	assert.Equal(name, cstr(dev.name))
+	assert.NotEqual(apidev.Name, cstr(dev.name))
+}
+
+func TestInitCreateDeviceWithIP(t *testing.T) {
+	var dev KflowDevice
+	cfg, apidev, assert := setupMainTest(t)
+
+	name := test.RandStr(8)
+	ip := randip()
+
+	deviceip = append([]byte(ip.String()), 0)
+	devicename = append([]byte(name), 0)
+
+	cfg.device_id = 0
+	cfg.device_ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[0]))
+	cfg.device_name = (*_Ctype_char)(unsafe.Pointer(&devicename[0]))
+	cfg.device_plan = _Ctype_int(rand.Uint32())
 
 	n := int(kflowInit(cfg, &dev))
 	assert.Equal(0, n)
@@ -104,7 +132,37 @@ func TestInitInvalidDevice(t *testing.T) {
 
 	// invalid device IP
 	cfg.device_id = 0
+	cfg.device_name = nil
 	cfg.device_ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[1]))
+	n = int(kflowInit(cfg, &KflowDevice{}))
+	assert.Equal(EKFLOWNODEVICE, n)
+}
+
+func TestInitInvalidCreate(t *testing.T) {
+	var n int
+	cfg, _, assert := setupMainTest(t)
+
+	devicename = append([]byte(test.RandStr(8)), 0)
+	deviceip = append([]byte(randip().String()), 0)
+
+	cfg.device_id = 0
+	cfg.device_ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[0]))
+	cfg.device_name = nil
+	cfg.device_plan = _Ctype_int(rand.Uint32())
+
+	// missing device name
+	n = int(kflowInit(cfg, &KflowDevice{}))
+	assert.Equal(EKFLOWNODEVICE, n)
+
+	// missing device IP
+	cfg.device_ip = nil
+	cfg.device_name = (*_Ctype_char)(unsafe.Pointer(&devicename[0]))
+	n = int(kflowInit(cfg, &KflowDevice{}))
+	assert.Equal(EKFLOWNODEVICE, n)
+
+	// missing device plan
+	cfg.device_ip = (*_Ctype_char)(unsafe.Pointer(&deviceip[0]))
+	cfg.device_plan = 0
 	n = int(kflowInit(cfg, &KflowDevice{}))
 	assert.Equal(EKFLOWNODEVICE, n)
 }
@@ -147,6 +205,15 @@ func cstr(c *_Ctype_char) string {
 	}))
 	idx := strings.IndexByte(str, 0)
 	return string(str[:idx])
+}
+
+func randip() net.IP {
+	return net.IPv4(
+		byte(1+rand.Uint32()%255),
+		byte(1+rand.Uint32()%255),
+		byte(1+rand.Uint32()%255),
+		byte(1+rand.Uint32()%255),
+	)
 }
 
 var (

@@ -89,6 +89,9 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 	case cfg.device_ip != nil:
 		dip := net.ParseIP(C.GoString(cfg.device_ip))
 		sender, err = libkflow.NewSenderWithDeviceIP(dip, errors, config)
+		if err == libkflow.ErrInvalidDevice {
+			sender, err = tryCreateDevice(cfg, errors, config)
+		}
 	case cfg.device_name != nil:
 		name := C.GoString(cfg.device_name)
 		sender, err = libkflow.NewSenderWithDeviceName(name, errors, config)
@@ -164,14 +167,25 @@ func kflowVersion() *C.char {
 }
 
 func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Config) (*libkflow.Sender, error) {
-	ip := net.ParseIP(C.GoString(cfg.capture.ip))
+	name := C.GoString(cfg.device_name)
+	ip := net.ParseIP(C.GoString(cfg.device_ip))
+	planID := int(cfg.device_plan)
+
+	if ip == nil {
+		ip = net.ParseIP(C.GoString(cfg.capture.ip))
+	}
+
+	if name == "" || ip == nil || planID == 0 {
+		return nil, libkflow.ErrInvalidDevice
+	}
+
 	return libkflow.NewSenderWithNewDevice(&api.DeviceCreate{
-		Name:        C.GoString(cfg.device_name),
+		Name:        name,
 		Type:        "host-nprobe-dns-www",
-		Description: C.GoString(cfg.device_name),
+		Description: name,
 		SampleRate:  1,
 		BgpType:     "none",
-		PlanID:      int(cfg.device_plan),
+		PlanID:      planID,
 		IPs:         []net.IP{ip},
 		CdnAttr:     "N",
 	}, errors, config)
