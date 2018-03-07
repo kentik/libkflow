@@ -3,6 +3,7 @@ package main
 import (
 	"math/rand"
 	"net"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -167,6 +168,22 @@ func TestInitInvalidCreate(t *testing.T) {
 	assert.Equal(EKFLOWNODEVICE, n)
 }
 
+func TestInitStatusServer(t *testing.T) {
+	cfg, _, assert := setupMainTest(t)
+
+	statushost := append([]byte("localhost"), 0)
+	cfg.status.host = (*_Ctype_char)(unsafe.Pointer(&statushost[0]))
+	cfg.status.port = 62000
+
+	var dev KflowDevice
+	n := int(kflowInit(cfg, &dev))
+	assert.Equal(0, n)
+
+	r, err := http.Get("http://localhost:62000/v1/status")
+	assert.NoError(err)
+	assert.Equal(200, r.StatusCode)
+}
+
 func setupMainTest(t *testing.T) (*KflowConfig, *api.Device, *assert.Assertions) {
 	client, server, device, err := test.NewClientServer()
 	if err != nil {
@@ -224,4 +241,5 @@ var (
 	devicename []byte
 	program    []byte
 	version    []byte
+	statushost []byte
 )

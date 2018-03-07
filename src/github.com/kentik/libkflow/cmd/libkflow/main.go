@@ -15,9 +15,11 @@ import (
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/status"
 )
 
 var sender *libkflow.Sender
+var server *status.Server
 var errors chan error
 
 //export kflowInit
@@ -113,6 +115,13 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 			fail("library setup error: %s", err)
 			return C.EKFLOWCONFIG
 		}
+	}
+
+	if cfg.status.port != 0 {
+		var host = C.GoString(cfg.status.host)
+		var port = int(cfg.status.port)
+		server = status.NewServer(host, port)
+		go server.Start(sender.Metrics)
 	}
 
 	dev.id = C.uint64_t(sender.Device.ID)

@@ -30,6 +30,11 @@ typedef struct {
         char *URL;               // optional HTTP proxy URL
     } proxy;
 
+    struct {
+        char *host;              // status server host
+        int port;                // status server port
+    } status;
+
     int device_id;               // Kentik device ID
     char *device_if;             // Kentik device interface name
     char *device_ip;             // Kentik device IP

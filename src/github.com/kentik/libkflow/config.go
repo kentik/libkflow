@@ -122,6 +122,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 	sender := newSender(c.flow, c.timeout, c.verbose)
 	sender.Errors = errors
 	sender.sample = c.sample
+	sender.Metrics = metrics
 
 	if c.capture.Device != "" {
 		nif, err := net.InterfaceByName(c.capture.Device)

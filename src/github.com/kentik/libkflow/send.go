@@ -11,6 +11,7 @@ import (
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/metrics"
 	"zombiezen.com/go/capnproto2"
 )
 
@@ -27,6 +28,7 @@ type Sender struct {
 	workers sync.WaitGroup
 	Device  *api.Device
 	Errors  chan<- error
+	Metrics *metrics.Metrics
 }
 
 func newSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
