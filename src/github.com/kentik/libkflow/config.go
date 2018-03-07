@@ -9,6 +9,7 @@ import (
 
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
+	"github.com/kentik/libkflow/log"
 	"github.com/kentik/libkflow/metrics"
 )
 
@@ -22,7 +23,6 @@ type Config struct {
 	flow    *url.URL
 	metrics *url.URL
 	sample  int
-	verbose int
 	timeout time.Duration
 	program string
 	version string
@@ -76,8 +76,8 @@ func (c *Config) SetFlow(server string) {
 
 // SetVerbose sets the verbosity level. Specifying a value greater than
 // zero will cause verbose debug messages to be print to stderr.
-func (c *Config) SetVerbose(verbose int) {
-	c.verbose = verbose
+func (c *Config) SetVerbose(level int) {
+	log.SetVerbose(level)
 }
 
 // SetSampleRate sets the configured sample rate. If the sample rate
@@ -119,7 +119,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 		return nil, fmt.Errorf("agg setup error: %s", err)
 	}
 
-	sender := newSender(c.flow, c.timeout, c.verbose)
+	sender := newSender(c.flow, c.timeout)
 	sender.Errors = errors
 	sender.sample = c.sample
 	sender.Metrics = metrics
@@ -132,7 +132,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 
 		err = client.UpdateInterfaces(dev, nif)
 		if err != nil {
-			sender.debug("error updating device interfaces: %s", err)
+			log.Debugf("error updating device interfaces: %s", err)
 		}
 	}
 
@@ -152,7 +152,6 @@ func defaultConfig(email, token, program, version string) *Config {
 		api:     parseURL("https://api.kentik.com/api/internal"),
 		flow:    parseURL("https://flow.kentik.com/chf"),
 		metrics: parseURL("https://flow.kentik.com/tsdb"),
-		verbose: 0,
 		timeout: 10 * time.Second,
 		program: program,
 		version: version,

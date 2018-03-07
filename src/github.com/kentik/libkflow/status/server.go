@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kentik/libkflow/log"
 	"github.com/kentik/libkflow/metrics"
 )
 
@@ -33,6 +34,7 @@ func NewServer(host string, port int) *Server {
 }
 
 func (s *Server) Start(m *metrics.Metrics) error {
+	log.Debugf("status server at %s", s.server.Addr)
 	s.metrics = m
 	s.router.Handle("/v1/status", s)
 	return s.server.ListenAndServe()

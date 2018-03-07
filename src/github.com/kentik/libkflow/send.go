@@ -2,7 +2,6 @@ package libkflow
 
 import (
 	"bytes"
-	"log"
 	"net/url"
 	"os"
 	"sync"
@@ -11,6 +10,7 @@ import (
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/log"
 	"github.com/kentik/libkflow/metrics"
 	"zombiezen.com/go/capnproto2"
 )
@@ -23,7 +23,6 @@ type Sender struct {
 	timeout time.Duration
 	client  *api.Client
 	sample  int
-	verbose int
 	ticker  *time.Ticker
 	workers sync.WaitGroup
 	Device  *api.Device
@@ -31,19 +30,18 @@ type Sender struct {
 	Metrics *metrics.Metrics
 }
 
-func newSender(url *url.URL, timeout time.Duration, verbose int) *Sender {
+func newSender(url *url.URL, timeout time.Duration) *Sender {
 	return &Sender{
 		exit:    make(chan struct{}),
 		url:     url,
 		timeout: timeout,
-		verbose: verbose,
 		ticker:  time.NewTicker(20 * time.Minute),
 	}
 }
 
 // Send adds a flow record to the outgoing queue.
 func (s *Sender) Send(flow *flow.Flow) {
-	s.debug("sending flow to aggregator")
+	log.Debugf("sending flow to aggregator")
 	flow.DeviceId = uint32(s.Device.ID)
 	s.agg.Add(flow)
 }
@@ -76,7 +74,7 @@ func (s *Sender) start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 	go s.monitor()
 	go s.update()
 
-	s.debug("sender started with %d workers", n)
+	log.Debugf("sender started with %d workers", n)
 
 	return nil
 }
@@ -87,7 +85,7 @@ func (s *Sender) dispatch() {
 	url := s.url.String()
 
 	for msg := range s.agg.Output() {
-		s.debug("dispatching aggregated flow")
+		log.Debugf("dispatching aggregated flow")
 
 		buf.Reset()
 		buf.Write(cid[:])
@@ -116,7 +114,7 @@ func (s *Sender) monitor() {
 			s.workers.Wait()
 			s.ticker.Stop()
 			s.exit <- struct{}{}
-			s.debug("sender stopped")
+			log.Debugf("sender stopped")
 			return
 		}
 	}
@@ -129,13 +127,13 @@ func (s *Sender) update() {
 			if api.IsErrorWithStatusCode(err, 404) {
 				updated = &api.Device{}
 			} else {
-				s.debug("device API request failed: %s", err)
+				log.Debugf("device API request failed: %s", err)
 				continue
 			}
 		}
 
 		if s.Device.MaxFlowRate != updated.MaxFlowRate {
-			s.debug("updating max FPS to %d", updated.MaxFlowRate)
+			log.Debugf("updating max FPS to %d", updated.MaxFlowRate)
 			s.Device.MaxFlowRate = updated.MaxFlowRate
 			s.agg.Configure(updated.MaxFlowRate)
 		}
@@ -144,15 +142,9 @@ func (s *Sender) update() {
 		// may be using the device sample rate which has just
 		// changed, so abort the program
 		if s.sample == 0 && s.Device.SampleRate != updated.SampleRate {
-			s.debug("device sample rate changed, aborting")
+			log.Debugf("device sample rate changed, aborting")
 			os.Exit(1)
 		}
-	}
-}
-
-func (s *Sender) debug(fmt string, v ...interface{}) {
-	if s.verbose > 0 {
-		log.Printf(fmt, v...)
 	}
 }
 

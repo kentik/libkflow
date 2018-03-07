@@ -72,7 +72,7 @@ func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
 	server.Log.SetOutput(ioutil.Discard)
 
 	url := server.URL(test.FLOW)
-	sender := newSender(url, 1*time.Second, 0)
+	sender := newSender(url, 1*time.Second)
 	sender.start(agg, client, device, 1)
 
 	return sender, server, assert.New(t)
