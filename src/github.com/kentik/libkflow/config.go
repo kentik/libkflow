@@ -9,6 +9,7 @@ import (
 
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
+	"github.com/kentik/libkflow/metrics"
 )
 
 // Config describes the libkflow configuration.
@@ -94,8 +95,8 @@ func (c *Config) OverrideURLs(api, flow, metrics *url.URL) {
 	c.metrics = metrics
 }
 
-func (c *Config) NewMetrics(dev *api.Device) *Metrics {
-	return newMetrics(dev.ClientID(), c.program, c.version)
+func (c *Config) NewMetrics(dev *api.Device) *metrics.Metrics {
+	return metrics.New(dev.ClientID(), c.program, c.version)
 }
 
 func (c *Config) client() *api.Client {
@@ -111,9 +112,9 @@ func (c *Config) client() *api.Client {
 func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error) (*Sender, error) {
 	interval := time.Duration(1) * time.Minute
 	metrics := c.NewMetrics(dev)
-	metrics.start(c.metrics.String(), c.email, c.token, interval, c.proxy)
+	metrics.Start(c.metrics.String(), c.email, c.token, interval, c.proxy)
 
-	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, &metrics.Metrics)
+	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, metrics)
 	if err != nil {
 		return nil, fmt.Errorf("agg setup error: %s", err)
 	}

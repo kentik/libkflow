@@ -7,9 +7,9 @@ import (
 
 	"zombiezen.com/go/capnproto2"
 
-	"github.com/kentik/go-metrics"
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,12 +60,12 @@ type testState struct {
 	interval time.Duration
 	fps      int
 	agg      *Agg
-	metrics  *Metrics
+	metrics  *metrics.Metrics
 	*testing.T
 }
 
 func setup(t *testing.T, interval time.Duration, fps int) (*testState, *assert.Assertions) {
-	metrics := &Metrics{
+	metrics := &metrics.Metrics{
 		TotalFlowsIn:   metrics.NewMeter(),
 		TotalFlowsOut:  metrics.NewMeter(),
 		OrigSampleRate: metrics.NewHistogram(metrics.NewUniformSample(100)),

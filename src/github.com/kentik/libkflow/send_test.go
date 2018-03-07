@@ -9,11 +9,11 @@ import (
 
 	"zombiezen.com/go/capnproto2"
 
-	"github.com/kentik/go-metrics"
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,14 +58,7 @@ func BenchmarkSenderSend(b *testing.B) {
 }
 
 func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
-	metrics := &agg.Metrics{
-		TotalFlowsIn:   metrics.NewMeter(),
-		TotalFlowsOut:  metrics.NewMeter(),
-		OrigSampleRate: metrics.NewHistogram(metrics.NewUniformSample(100)),
-		NewSampleRate:  metrics.NewHistogram(metrics.NewUniformSample(100)),
-		RateLimitDrops: metrics.NewMeter(),
-	}
-
+	metrics := metrics.New("clientid", "send_test", "1.0.0")
 	agg, err := agg.NewAgg(10*time.Millisecond, 100, metrics)
 	if err != nil {
 		t.Fatal(err)

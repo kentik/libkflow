@@ -1,4 +1,4 @@
-package libkflow
+package metrics
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/kentik/common/cmetrics/httptsdb"
 	"github.com/kentik/go-metrics"
-	"github.com/kentik/libkflow/agg"
 )
 
 const (
@@ -18,11 +17,15 @@ const (
 )
 
 type Metrics struct {
-	Extra   map[string]string
-	Metrics agg.Metrics
+	TotalFlowsIn   metrics.Meter
+	TotalFlowsOut  metrics.Meter
+	OrigSampleRate metrics.Histogram
+	NewSampleRate  metrics.Histogram
+	RateLimitDrops metrics.Meter
+	Extra          map[string]string
 }
 
-func newMetrics(clientid, program, version string) *Metrics {
+func New(clientid, program, version string) *Metrics {
 	clientid = strings.Replace(clientid, ":", ".", -1)
 
 	name := func(key string) string {
@@ -41,18 +44,16 @@ func newMetrics(clientid, program, version string) *Metrics {
 	}
 
 	return &Metrics{
-		Extra: extra,
-		Metrics: agg.Metrics{
-			TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), nil),
-			TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), nil),
-			OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
-			NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), nil, sample()),
-			RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), nil),
-		},
+		TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), nil),
+		TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), nil),
+		OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
+		NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), nil, sample()),
+		RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), nil),
+		Extra:          extra,
 	}
 }
 
-func (m *Metrics) start(url, email, token string, interval time.Duration, proxy *url.URL) {
+func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy *url.URL) {
 	proxyURL := ""
 	if proxy != nil {
 		proxyURL = proxy.String()
@@ -72,4 +73,16 @@ func (m *Metrics) start(url, email, token string, interval time.Duration, proxy 
 		ApiEmail:           &email,
 		ApiPassword:        &token,
 	})
+}
+
+func NewMeter() metrics.Meter {
+	return metrics.NewMeter()
+}
+
+func NewHistogram(s metrics.Sample) metrics.Histogram {
+	return metrics.NewHistogram(s)
+}
+
+func NewUniformSample(n int) metrics.Sample {
+	return metrics.NewUniformSample(n)
 }

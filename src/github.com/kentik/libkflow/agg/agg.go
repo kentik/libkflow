@@ -6,6 +6,7 @@ import (
 
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/metrics"
 	"zombiezen.com/go/capnproto2"
 )
 
@@ -18,7 +19,7 @@ type Agg struct {
 	queue     *Queue
 	queued    int64
 	batchSize int
-	metrics   *Metrics
+	metrics   *metrics.Metrics
 	sync.RWMutex
 }
 
@@ -29,7 +30,7 @@ const MaxFlowBuffer = 8
 // NewAgg creates a new Agg that aggregates flows into a single
 // cap'n proto message after the specified interval, resampling
 // as necessary to keep the total number under the fps arg.
-func NewAgg(interval time.Duration, fps int, metrics *Metrics) (*Agg, error) {
+func NewAgg(interval time.Duration, fps int, metrics *metrics.Metrics) (*Agg, error) {
 	a := &Agg{
 		output:   make(chan *capnp.Message),
 		done:     make(chan struct{}),
