@@ -94,7 +94,7 @@ func (c *Client) getdevice(url string) (*Device, error) {
 	defer r.Body.Close()
 
 	if r.StatusCode != 200 {
-		return nil, &Error{StatusCode: r.StatusCode}
+		return nil, c.error(r)
 	}
 
 	dw := &DeviceWrapper{}
@@ -123,7 +123,7 @@ func (c *Client) CreateDevice(create *DeviceCreate) (*Device, error) {
 	defer r.Body.Close()
 
 	if r.StatusCode != 201 {
-		return nil, &Error{StatusCode: r.StatusCode}
+		return nil, c.error(r)
 	}
 
 	dw := &DeviceWrapper{}
@@ -147,7 +147,7 @@ func (c *Client) GetInterfaces(did int) ([]Interface, error) {
 	defer r.Body.Close()
 
 	if r.StatusCode != 200 {
-		return nil, &Error{StatusCode: r.StatusCode}
+		return nil, c.error(r)
 	}
 
 	interfaces := []Interface{}
@@ -238,4 +238,13 @@ func (c *Client) do(method, url, ctype string, body io.Reader) (*http.Response, 
 	r.Header.Set("Content-Type", ctype)
 
 	return c.Client.Do(r)
+}
+
+func (c *Client) error(r *http.Response) error {
+	body := map[string]string{}
+	json.NewDecoder(r.Body).Decode(&body)
+	return &Error{
+		StatusCode: r.StatusCode,
+		Message:    body["error"],
+	}
 }
