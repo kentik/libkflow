@@ -33,11 +33,12 @@ func NewServer(host string, port int) *Server {
 	}
 }
 
-func (s *Server) Start(m *metrics.Metrics) error {
+func (s *Server) Start(m *metrics.Metrics) {
 	log.Debugf("status server at %s", s.server.Addr)
 	s.metrics = m
 	s.router.Handle("/v1/status", s)
-	return s.server.ListenAndServe()
+	err := s.server.ListenAndServe()
+	log.Debugf("status server error: %s", err)
 }
 
 type Status struct {
