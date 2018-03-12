@@ -38,7 +38,8 @@ type DeviceCreate struct {
 	Description string   `json:"device_description"`
 	SampleRate  int      `json:"device_sample_rate,string"`
 	BgpType     string   `json:"device_bgp_type"`
-	PlanID      int      `json:"plan_id"`
+	PlanID      int      `json:"plan_id,omitempty"`
+	SiteID      int      `json:"site_id,omitempty"`
 	IPs         []net.IP `json:"sending_ips"`
 	CdnAttr     string   `json:"cdn_attr"`
 }

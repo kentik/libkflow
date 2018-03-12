@@ -179,6 +179,7 @@ func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Con
 	name := C.GoString(cfg.device_name)
 	ip := net.ParseIP(C.GoString(cfg.device_ip))
 	planID := int(cfg.device_plan)
+	siteID := int(cfg.device_site)
 
 	if ip == nil {
 		ip = net.ParseIP(C.GoString(cfg.capture.ip))
@@ -195,6 +196,7 @@ func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Con
 		SampleRate:  1,
 		BgpType:     "none",
 		PlanID:      planID,
+		SiteID:      siteID,
 		IPs:         []net.IP{ip},
 		CdnAttr:     "N",
 	}, errors, config)
