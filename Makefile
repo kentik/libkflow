@@ -45,7 +45,7 @@ $(WORK)/libkflow.a: $(SRC)
 	go build -o $@ -buildmode=c-archive -ldflags="-X $(MAIN).Version=$(VERSION)" $(CLIB)
 
 $(WORK)/server: $(SRC)
-	go build -o $@ $(MAIN)/cmd/server
+	go build -o $@ -ldflags="-linkmode external" $(MAIN)/cmd/server
 
 $(WORK)/demo: $(MAIN)/kflow.h $(CURDIR)/demo.c $(WORK)/libkflow.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -I $(<D) $(filter-out $<,$^)
