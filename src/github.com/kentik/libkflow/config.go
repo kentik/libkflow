@@ -57,7 +57,7 @@ func (c *Config) SetProxy(url *url.URL) {
 func (c *Config) SetServer(host net.IP, port int) {
 	base := "http://" + net.JoinHostPort(host.String(), strconv.Itoa(port))
 	var (
-		api     = parseURL(base + "/api/v5")
+		api     = parseURL(base + "/api/internal")
 		flow    = parseURL(base + "/chf")
 		metrics = parseURL(base + "/tsdb")
 	)
