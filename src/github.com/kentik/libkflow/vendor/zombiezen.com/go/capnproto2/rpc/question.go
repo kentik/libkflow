@@ -79,18 +79,23 @@ func (q *question) start() {
 		select {
 		case <-q.resolved:
 			// Resolved naturally, nothing to do.
+		case <-q.conn.bg.Done():
 		case <-q.ctx.Done():
 			select {
+			case <-q.resolved:
+			case <-q.conn.bg.Done():
 			case <-q.conn.mu:
+				if err := q.conn.startWork(); err != nil {
+					// teardown calls cancel.
+					q.conn.mu.Unlock()
+					return
+				}
 				if q.cancel(q.ctx.Err()) {
 					q.conn.sendMessage(newFinishMessage(nil, q.id, true /* release */))
 				}
+				q.conn.workers.Done()
 				q.conn.mu.Unlock()
-			case <-q.resolved:
-			case <-q.conn.bg.Done():
 			}
-		case <-q.conn.bg.Done():
-			// TODO(light): connection should reject all questions on shutdown.
 		}
 	}()
 }
@@ -98,7 +103,10 @@ func (q *question) start() {
 // fulfill is called to resolve a question successfully.
 // The caller must be holding onto q.conn.mu.
 func (q *question) fulfill(obj capnp.Ptr) {
-	ctab := obj.Segment().Message().CapTable
+	var ctab []capnp.Client
+	if obj.IsValid() {
+		ctab = obj.Segment().Message().CapTable
+	}
 	visited := make([]bool, len(ctab))
 	for _, d := range q.derived {
 		tgt, err := capnp.TransformPtr(obj, d)
@@ -216,12 +224,15 @@ func (q *question) Struct() (capnp.Struct, error) {
 func (q *question) PipelineCall(transform []capnp.PipelineOp, ccall *capnp.Call) capnp.Answer {
 	select {
 	case <-q.conn.mu:
+		if err := q.conn.startWork(); err != nil {
+			q.conn.mu.Unlock()
+			return capnp.ErrorAnswer(err)
+		}
 	case <-ccall.Ctx.Done():
 		return capnp.ErrorAnswer(ccall.Ctx.Err())
-	case <-q.conn.bg.Done():
-		return capnp.ErrorAnswer(ErrConnClosed)
 	}
 	ans := q.lockedPipelineCall(transform, ccall)
+	q.conn.workers.Done()
 	q.conn.mu.Unlock()
 	return ans
 }

@@ -1,6 +1,7 @@
 package capnp
 
 // A Ptr is a reference to a Cap'n Proto struct, list, or interface.
+// The zero value is a null pointer.
 type Ptr struct {
 	seg        *Segment
 	off        Address
@@ -211,30 +212,15 @@ func (p Ptr) Default(def []byte) (Ptr, error) {
 	return p, nil
 }
 
-func (p Ptr) value(paddr Address) rawPointer {
-	switch p.flags.ptrType() {
-	case structPtrType:
-		return p.Struct().value(paddr)
-	case listPtrType:
-		return p.List().value(paddr)
-	case interfacePtrType:
-		return p.Interface().value(paddr)
-	}
-	return 0
+// SamePtr reports whether p and q refer to the same object.
+func SamePtr(p, q Ptr) bool {
+	return p.seg == q.seg && p.off == q.off
 }
 
-// address returns the pointer's address.  It panics if p is not a valid Struct or List.
-func (p Ptr) address() Address {
-	switch p.flags.ptrType() {
-	case structPtrType:
-		return p.Struct().Address()
-	case listPtrType:
-		return p.List().Address()
-	}
-	panic("ptr not a valid struct or list")
-}
-
-// Pointer is deprecated in favor of Ptr.
+// A value that implements Pointer is a reference to a Cap'n Proto object.
+//
+// Deprecated: Using this type introduces an unnecessary allocation.
+// Use Ptr instead.
 type Pointer interface {
 	// Segment returns the segment this pointer points into.
 	// If nil, then this is an invalid pointer.
@@ -244,25 +230,30 @@ type Pointer interface {
 	// non-zero size.
 	HasData() bool
 
-	// value converts the pointer into a raw value.
-	value(paddr Address) rawPointer
-
 	// underlying returns a Pointer that is one of a Struct, a List, or an
 	// Interface.
 	underlying() Pointer
 }
 
-// IsValid is deprecated in favor of Ptr.IsValid.
+// IsValid reports whether p is valid.
+//
+// Deprecated: Use Ptr.IsValid instead.
 func IsValid(p Pointer) bool {
 	return p != nil && p.Segment() != nil
 }
 
-// HasData is deprecated.
+// HasData reports whether p has non-zero size.
+//
+// Deprecated: There are usually better ways to determine this
+// information: length of a list, checking fields, or using HasFoo
+// accessors.
 func HasData(p Pointer) bool {
 	return IsValid(p) && p.HasData()
 }
 
-// PointerDefault is deprecated in favor of Ptr.Default.
+// PointerDefault returns p if it is valid, otherwise it unmarshals def.
+//
+// Deprecated: Use Ptr.Default.
 func PointerDefault(p Pointer, def []byte) (Pointer, error) {
 	pp, err := toPtr(p).Default(def)
 	return pp.toPointer(), err

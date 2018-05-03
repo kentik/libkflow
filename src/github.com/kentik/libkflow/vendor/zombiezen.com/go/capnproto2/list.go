@@ -3,12 +3,15 @@ package capnp
 import (
 	"errors"
 	"math"
+	"strconv"
+
+	"zombiezen.com/go/capnproto2/internal/strquote"
 )
 
 // A List is a reference to an array of values.
 type List struct {
 	seg        *Segment
-	off        Address
+	off        Address // at beginning of elements (past composite list tag word)
 	length     int32
 	size       ObjectSize
 	depthLimit uint
@@ -61,12 +64,17 @@ func NewCompositeList(s *Segment, sz ObjectSize, n int32) (List, error) {
 	}, nil
 }
 
-// ToList is deprecated in favor of Ptr.List.
+// ToList converts p to a List.
+//
+// Deprecated: Use Ptr.List.
 func ToList(p Pointer) List {
 	return toPtr(p).List()
 }
 
-// ToListDefault is deprecated in favor of Ptr.ListDefault.
+// ToListDefault attempts to convert p into a list, reading the default
+// value from def if p is not a list.
+//
+// Deprecated: Use Ptr.ListDefault.
 func ToListDefault(p Pointer, def []byte) (List, error) {
 	return toPtr(p).ListDefault(def)
 }
@@ -119,36 +127,50 @@ func (p List) readSize() Size {
 	return sz
 }
 
-// value returns the equivalent raw list pointer.
-func (p List) value(paddr Address) rawPointer {
+// allocSize returns the list's size for the purpose of copying the list
+// to a different message.
+func (p List) allocSize() Size {
 	if p.seg == nil {
 		return 0
 	}
-	off := makePointerOffset(paddr, p.off)
+	if p.flags&isBitList != 0 {
+		return Size((p.length + 7) / 8)
+	}
+	sz, _ := p.size.totalSize().times(p.length) // size has already been validated
+	if p.flags&isCompositeList == 0 {
+		return sz
+	}
+	return sz + wordSize
+}
+
+// raw returns the equivalent raw list pointer with a zero offset.
+func (p List) raw() rawPointer {
+	if p.seg == nil {
+		return 0
+	}
 	if p.flags&isCompositeList != 0 {
-		// p.off points to the data not the header
-		return rawListPointer(off-1, compositeList, p.length*p.size.totalWordCount())
+		return rawListPointer(0, compositeList, p.length*p.size.totalWordCount())
 	}
 	if p.flags&isBitList != 0 {
-		return rawListPointer(off, bit1List, p.length)
+		return rawListPointer(0, bit1List, p.length)
 	}
 	if p.size.PointerCount == 1 && p.size.DataSize == 0 {
-		return rawListPointer(off, pointerList, p.length)
+		return rawListPointer(0, pointerList, p.length)
 	}
 	if p.size.PointerCount != 0 {
 		panic(errListSize)
 	}
 	switch p.size.DataSize {
 	case 0:
-		return rawListPointer(off, voidList, p.length)
+		return rawListPointer(0, voidList, p.length)
 	case 1:
-		return rawListPointer(off, byte1List, p.length)
+		return rawListPointer(0, byte1List, p.length)
 	case 2:
-		return rawListPointer(off, byte2List, p.length)
+		return rawListPointer(0, byte2List, p.length)
 	case 4:
-		return rawListPointer(off, byte4List, p.length)
+		return rawListPointer(0, byte4List, p.length)
 	case 8:
-		return rawListPointer(off, byte8List, p.length)
+		return rawListPointer(0, byte8List, p.length)
 	default:
 		panic(errListSize)
 	}
@@ -159,6 +181,9 @@ func (p List) underlying() Pointer {
 }
 
 // Address returns the address the pointer references.
+//
+// Deprecated: The return value is not well-defined.  Use SamePtr if you
+// need to check whether two pointers refer to the same object.
 func (p List) Address() Address {
 	return p.off
 }
@@ -171,31 +196,36 @@ func (p List) Len() int {
 	return int(p.length)
 }
 
-// elem returns the slice of segment data for a list element.
-func (p List) elem(i int) (addr Address, sz Size) {
+// primitiveElem returns the address of the segment data for a list element.
+// Calling this on a bit list returns an error.
+func (p List) primitiveElem(i int, expectedSize ObjectSize) (Address, error) {
 	if p.seg == nil || i < 0 || i >= int(p.length) {
+		// This is programmer error, not input error.
 		panic(errOutOfBounds)
 	}
-	if p.flags&isBitList != 0 {
-		addr = p.off.addOffset(BitOffset(i).offset())
-		return addr, 1
+	if p.flags&isBitList != 0 || p.flags&isCompositeList == 0 && p.size != expectedSize || p.flags&isCompositeList != 0 && (p.size.DataSize < expectedSize.DataSize || p.size.PointerCount < expectedSize.PointerCount) {
+		return 0, errElementSize
 	}
-	sz = p.size.totalSize()
-	addr, _ = p.off.element(int32(i), sz)
-	return addr, sz
-}
-
-func (p List) slice(i int) []byte {
-	addr, sz := p.elem(i)
-	return p.seg.slice(addr, sz)
+	addr, ok := p.off.element(int32(i), p.size.totalSize())
+	if !ok {
+		return 0, errOverflow
+	}
+	return addr, nil
 }
 
 // Struct returns the i'th element as a struct.
 func (p List) Struct(i int) Struct {
+	if p.seg == nil || i < 0 || i >= int(p.length) {
+		// This is programmer error, not input error.
+		panic(errOutOfBounds)
+	}
 	if p.flags&isBitList != 0 {
 		return Struct{}
 	}
-	addr, _ := p.elem(i)
+	addr, ok := p.off.element(int32(i), p.size.totalSize())
+	if !ok {
+		return Struct{}
+	}
 	return Struct{
 		seg:        p.seg,
 		off:        addr,
@@ -210,7 +240,7 @@ func (p List) SetStruct(i int, s Struct) error {
 	if p.flags&isBitList != 0 {
 		return errBitListStruct
 	}
-	return copyStruct(copyContext{}, p.Struct(i), s)
+	return copyStruct(p.Struct(i), s)
 }
 
 // A BitList is a reference to a list of booleans.
@@ -233,26 +263,54 @@ func NewBitList(s *Segment, n int32) (BitList, error) {
 
 // At returns the i'th bit.
 func (p BitList) At(i int) bool {
-	b := p.slice(i)
-	if b == nil {
+	if p.seg == nil || i < 0 || i >= int(p.length) {
+		// This is programmer error, not input error.
+		panic(errOutOfBounds)
+	}
+	if p.flags&isBitList == 0 {
 		return false
 	}
 	bit := BitOffset(i)
-	return b[0]&bit.mask() != 0
+	addr := p.off.addOffset(bit.offset())
+	return p.seg.readUint8(addr)&bit.mask() != 0
 }
 
 // Set sets the i'th bit to v.
 func (p BitList) Set(i int, v bool) {
-	b := p.slice(i)
-	if b == nil {
+	if p.seg == nil || i < 0 || i >= int(p.length) {
+		// This is programmer error, not input error.
 		panic(errOutOfBounds)
 	}
+	if p.flags&isBitList == 0 {
+		// Again, programmer error.  Should have used NewBitList.
+		panic(errElementSize)
+	}
 	bit := BitOffset(i)
+	addr := p.off.addOffset(bit.offset())
+	b := p.seg.slice(addr, 1)
 	if v {
 		b[0] |= bit.mask()
 	} else {
 		b[0] &^= bit.mask()
 	}
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[true, false]").
+func (p BitList) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < p.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		if p.At(i) {
+			buf = append(buf, "true"...)
+		} else {
+			buf = append(buf, "false"...)
+		}
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // A PointerList is a reference to an array of pointers.
@@ -277,7 +335,9 @@ func NewPointerList(s *Segment, n int32) (PointerList, error) {
 	}}, nil
 }
 
-// At is deprecated in favor of PtrAt.
+// At returns the i'th pointer in the list.
+//
+// Deprecated: Use PtrAt.
 func (p PointerList) At(i int) (Pointer, error) {
 	pi, err := p.PtrAt(i)
 	return pi.toPointer(), err
@@ -285,19 +345,27 @@ func (p PointerList) At(i int) (Pointer, error) {
 
 // PtrAt returns the i'th pointer in the list.
 func (p PointerList) PtrAt(i int) (Ptr, error) {
-	addr, _ := p.elem(i)
+	addr, err := p.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return Ptr{}, err
+	}
 	return p.seg.readPtr(addr, p.depthLimit)
 }
 
-// Set is deprecated in favor of SetPtr.
+// Set sets the i'th pointer in the list to v.
+//
+// Deprecated: Use SetPtr.
 func (p PointerList) Set(i int, v Pointer) error {
 	return p.SetPtr(i, toPtr(v))
 }
 
 // SetPtr sets the i'th pointer in the list to v.
 func (p PointerList) SetPtr(i int, v Ptr) error {
-	addr, _ := p.elem(i)
-	return p.seg.writePtr(copyContext{}, addr, v)
+	addr, err := p.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return err
+	}
+	return p.seg.writePtr(addr, v, false)
 }
 
 // TextList is an array of pointers to strings.
@@ -314,7 +382,10 @@ func NewTextList(s *Segment, n int32) (TextList, error) {
 
 // At returns the i'th string in the list.
 func (l TextList) At(i int) (string, error) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return "", err
+	}
 	p, err := l.seg.readPtr(addr, l.depthLimit)
 	if err != nil {
 		return "", err
@@ -325,7 +396,10 @@ func (l TextList) At(i int) (string, error) {
 // BytesAt returns the i'th element in the list as a byte slice.
 // The underlying array of the slice is the segment data.
 func (l TextList) BytesAt(i int) ([]byte, error) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return nil, err
+	}
 	p, err := l.seg.readPtr(addr, l.depthLimit)
 	if err != nil {
 		return nil, err
@@ -335,12 +409,37 @@ func (l TextList) BytesAt(i int) ([]byte, error) {
 
 // Set sets the i'th string in the list to v.
 func (l TextList) Set(i int, v string) error {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return err
+	}
+	if v == "" {
+		return l.seg.writePtr(addr, Ptr{}, false)
+	}
 	p, err := NewText(l.seg, v)
 	if err != nil {
 		return err
 	}
-	return p.seg.writePtr(copyContext{}, addr, p.List.ToPtr())
+	return l.seg.writePtr(addr, p.List.ToPtr(), false)
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. `["foo", "bar"]`).
+func (l TextList) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		s, err := l.BytesAt(i)
+		if err != nil {
+			buf = append(buf, "<error>"...)
+			continue
+		}
+		buf = strquote.Append(buf, s)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // DataList is an array of pointers to data.
@@ -357,7 +456,10 @@ func NewDataList(s *Segment, n int32) (DataList, error) {
 
 // At returns the i'th data in the list.
 func (l DataList) At(i int) ([]byte, error) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return nil, err
+	}
 	p, err := l.seg.readPtr(addr, l.depthLimit)
 	if err != nil {
 		return nil, err
@@ -367,12 +469,37 @@ func (l DataList) At(i int) ([]byte, error) {
 
 // Set sets the i'th data in the list to v.
 func (l DataList) Set(i int, v []byte) error {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{PointerCount: 1})
+	if err != nil {
+		return err
+	}
+	if len(v) == 0 {
+		return l.seg.writePtr(addr, Ptr{}, false)
+	}
 	p, err := NewData(l.seg, v)
 	if err != nil {
 		return err
 	}
-	return p.seg.writePtr(copyContext{}, addr, p.List.ToPtr())
+	return l.seg.writePtr(addr, p.List.ToPtr(), false)
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. `["foo", "bar"]`).
+func (l DataList) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		s, err := l.At(i)
+		if err != nil {
+			buf = append(buf, "<error>"...)
+			continue
+		}
+		buf = strquote.Append(buf, s)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // A VoidList is a list of zero-sized elements.
@@ -386,6 +513,20 @@ func NewVoidList(s *Segment, n int32) VoidList {
 		length:     n,
 		depthLimit: maxDepth,
 	}}
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[void, void, void]").
+func (l VoidList) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = append(buf, "void"...)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // A UInt8List is an array of UInt8 values.
@@ -433,22 +574,30 @@ func NewData(s *Segment, v []byte) (UInt8List, error) {
 	return l, nil
 }
 
-// ToText is deprecated in favor of Ptr.Text.
+// ToText attempts to convert p into Text.
+//
+// Deprecated: Use Ptr.Text.
 func ToText(p Pointer) string {
 	return toPtr(p).TextDefault("")
 }
 
-// ToTextDefault is deprecated in favor of Ptr.TextDefault.
+// ToTextDefault attempts to convert p into Text, returning def on failure.
+//
+// Deprecated: Use Ptr.TextDefault.
 func ToTextDefault(p Pointer, def string) string {
 	return toPtr(p).TextDefault(def)
 }
 
-// ToData is deprecated in favor of Ptr.Data.
+// ToData attempts to convert p into Data.
+//
+// Deprecated: Use Ptr.Data.
 func ToData(p Pointer) []byte {
 	return toPtr(p).DataDefault(nil)
 }
 
-// ToDataDefault is deprecated in favor of Ptr.DataDefault.
+// ToDataDefault attempts to convert p into Data, returning def on failure.
+//
+// Deprecated: Use Ptr.DataDefault.
 func ToDataDefault(p Pointer, def []byte) []byte {
 	return toPtr(p).DataDefault(def)
 }
@@ -459,20 +608,34 @@ func isOneByteList(p Ptr) bool {
 
 // At returns the i'th element.
 func (l UInt8List) At(i int) uint8 {
-	b := l.slice(i)
-	if b == nil {
-		panic(errOutOfBounds)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 1})
+	if err != nil {
+		return 0
 	}
-	return b[0]
+	return l.seg.readUint8(addr)
 }
 
 // Set sets the i'th element to v.
 func (l UInt8List) Set(i int, v uint8) {
-	b := l.slice(i)
-	if b == nil {
-		panic(errOutOfBounds)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 1})
+	if err != nil {
+		panic(err)
 	}
-	b[0] = v
+	l.seg.writeUint8(addr, v)
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l UInt8List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendUint(buf, uint64(l.At(i)), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // Int8List is an array of Int8 values.
@@ -489,20 +652,34 @@ func NewInt8List(s *Segment, n int32) (Int8List, error) {
 
 // At returns the i'th element.
 func (l Int8List) At(i int) int8 {
-	b := l.slice(i)
-	if b == nil {
-		panic(errOutOfBounds)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 1})
+	if err != nil {
+		return 0
 	}
-	return int8(b[0])
+	return int8(l.seg.readUint8(addr))
 }
 
 // Set sets the i'th element to v.
 func (l Int8List) Set(i int, v int8) {
-	b := l.slice(i)
-	if b == nil {
-		panic(errOutOfBounds)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 1})
+	if err != nil {
+		panic(err)
 	}
-	b[0] = uint8(v)
+	l.seg.writeUint8(addr, uint8(v))
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l Int8List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendInt(buf, int64(l.At(i)), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // A UInt16List is an array of UInt16 values.
@@ -519,14 +696,34 @@ func NewUInt16List(s *Segment, n int32) (UInt16List, error) {
 
 // At returns the i'th element.
 func (l UInt16List) At(i int) uint16 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 2})
+	if err != nil {
+		return 0
+	}
 	return l.seg.readUint16(addr)
 }
 
 // Set sets the i'th element to v.
 func (l UInt16List) Set(i int, v uint16) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 2})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint16(addr, v)
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l UInt16List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendUint(buf, uint64(l.At(i)), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // Int16List is an array of Int16 values.
@@ -543,14 +740,34 @@ func NewInt16List(s *Segment, n int32) (Int16List, error) {
 
 // At returns the i'th element.
 func (l Int16List) At(i int) int16 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 2})
+	if err != nil {
+		return 0
+	}
 	return int16(l.seg.readUint16(addr))
 }
 
 // Set sets the i'th element to v.
 func (l Int16List) Set(i int, v int16) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 2})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint16(addr, uint16(v))
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l Int16List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendInt(buf, int64(l.At(i)), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // UInt32List is an array of UInt32 values.
@@ -567,14 +784,34 @@ func NewUInt32List(s *Segment, n int32) (UInt32List, error) {
 
 // At returns the i'th element.
 func (l UInt32List) At(i int) uint32 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 4})
+	if err != nil {
+		return 0
+	}
 	return l.seg.readUint32(addr)
 }
 
 // Set sets the i'th element to v.
 func (l UInt32List) Set(i int, v uint32) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 4})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint32(addr, v)
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l UInt32List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendUint(buf, uint64(l.At(i)), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // Int32List is an array of Int32 values.
@@ -591,14 +828,34 @@ func NewInt32List(s *Segment, n int32) (Int32List, error) {
 
 // At returns the i'th element.
 func (l Int32List) At(i int) int32 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 4})
+	if err != nil {
+		return 0
+	}
 	return int32(l.seg.readUint32(addr))
 }
 
 // Set sets the i'th element to v.
 func (l Int32List) Set(i int, v int32) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 4})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint32(addr, uint32(v))
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l Int32List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendInt(buf, int64(l.At(i)), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // UInt64List is an array of UInt64 values.
@@ -615,14 +872,34 @@ func NewUInt64List(s *Segment, n int32) (UInt64List, error) {
 
 // At returns the i'th element.
 func (l UInt64List) At(i int) uint64 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 8})
+	if err != nil {
+		return 0
+	}
 	return l.seg.readUint64(addr)
 }
 
 // Set sets the i'th element to v.
 func (l UInt64List) Set(i int, v uint64) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 8})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint64(addr, v)
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l UInt64List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendUint(buf, l.At(i), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // Int64List is an array of Int64 values.
@@ -639,14 +916,34 @@ func NewInt64List(s *Segment, n int32) (Int64List, error) {
 
 // At returns the i'th element.
 func (l Int64List) At(i int) int64 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 8})
+	if err != nil {
+		return 0
+	}
 	return int64(l.seg.readUint64(addr))
 }
 
 // Set sets the i'th element to v.
 func (l Int64List) Set(i int, v int64) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 8})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint64(addr, uint64(v))
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l Int64List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendInt(buf, l.At(i), 10)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // Float32List is an array of Float32 values.
@@ -654,7 +951,7 @@ type Float32List struct{ List }
 
 // NewFloat32List creates a new list of Float32, preferring placement in s.
 func NewFloat32List(s *Segment, n int32) (Float32List, error) {
-	l, err := newPrimitiveList(s, 8, n)
+	l, err := newPrimitiveList(s, 4, n)
 	if err != nil {
 		return Float32List{}, err
 	}
@@ -663,14 +960,34 @@ func NewFloat32List(s *Segment, n int32) (Float32List, error) {
 
 // At returns the i'th element.
 func (l Float32List) At(i int) float32 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 4})
+	if err != nil {
+		return 0
+	}
 	return math.Float32frombits(l.seg.readUint32(addr))
 }
 
 // Set sets the i'th element to v.
 func (l Float32List) Set(i int, v float32) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 4})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint32(addr, math.Float32bits(v))
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l Float32List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendFloat(buf, float64(l.At(i)), 'g', -1, 32)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 // Float64List is an array of Float64 values.
@@ -687,14 +1004,34 @@ func NewFloat64List(s *Segment, n int32) (Float64List, error) {
 
 // At returns the i'th element.
 func (l Float64List) At(i int) float64 {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 8})
+	if err != nil {
+		return 0
+	}
 	return math.Float64frombits(l.seg.readUint64(addr))
 }
 
 // Set sets the i'th element to v.
 func (l Float64List) Set(i int, v float64) {
-	addr, _ := l.elem(i)
+	addr, err := l.primitiveElem(i, ObjectSize{DataSize: 8})
+	if err != nil {
+		panic(err)
+	}
 	l.seg.writeUint64(addr, math.Float64bits(v))
+}
+
+// String returns the list in Cap'n Proto schema format (e.g. "[1, 2, 3]").
+func (l Float64List) String() string {
+	var buf []byte
+	buf = append(buf, '[')
+	for i := 0; i < l.Len(); i++ {
+		if i > 0 {
+			buf = append(buf, ", "...)
+		}
+		buf = strconv.AppendFloat(buf, l.At(i), 'g', -1, 64)
+	}
+	buf = append(buf, ']')
+	return string(buf)
 }
 
 type listFlags uint8

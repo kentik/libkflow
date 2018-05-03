@@ -8,7 +8,7 @@ import (
 
 	"zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/internal/nodemap"
-	"zombiezen.com/go/capnproto2/std/capnp/schema"
+	"zombiezen.com/go/capnproto2/internal/schema"
 )
 
 // Extract copies s into val, a pointer to a Go struct.
@@ -24,6 +24,8 @@ func Extract(val interface{}, typeID uint64, s capnp.Struct) error {
 type extracter struct {
 	nodes nodemap.Map
 }
+
+var clientType = reflect.TypeOf((*capnp.Client)(nil)).Elem()
 
 func (e *extracter) extractStruct(val reflect.Value, typeID uint64, s capnp.Struct) error {
 	if val.Kind() == reflect.Ptr {
@@ -219,6 +221,22 @@ func (e *extracter) extractField(val reflect.Value, s capnp.Struct, f schema.Fie
 			l = p.List()
 		}
 		return e.extractList(val, typ, l)
+	case schema.Type_Which_interface:
+		p, err := s.Ptr(uint16(f.Slot().Offset()))
+		if err != nil {
+			return err
+		}
+		if val.Type() != clientType {
+			// Must be a struct wrapper.
+			val = val.FieldByName("Client")
+		}
+
+		client := p.Interface().Client()
+		if client == nil {
+			val.Set(reflect.Zero(val.Type()))
+		} else {
+			val.Set(reflect.ValueOf(client))
+		}
 	default:
 		return fmt.Errorf("unknown field type %v", typ.Which())
 	}
@@ -376,6 +394,24 @@ func isTypeMatch(r reflect.Type, s schema.Type) bool {
 	case schema.Type_Which_list:
 		e, _ := s.List().ElementType()
 		return r.Kind() == reflect.Slice && isTypeMatch(r.Elem(), e)
+	case schema.Type_Which_interface:
+		if r == clientType {
+			return true
+		}
+
+		// Otherwise, the type must be a struct with one element named
+		// "Client" of type capnp.Client.
+		if r.Kind() != reflect.Struct {
+			return false
+		}
+		if r.NumField() != 1 {
+			return false
+		}
+		field, ok := r.FieldByName("Client")
+		if !ok {
+			return false
+		}
+		return field.Type == clientType
 	}
 	k, ok := typeMap[s.Which()]
 	return ok && k == r.Kind()

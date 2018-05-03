@@ -141,7 +141,7 @@
 			"importpath": "zombiezen.com/go/capnproto2",
 			"repository": "https://github.com/zombiezen/go-capnproto2",
 			"vcs": "git",
-			"revision": "e255c9f719103c5329bc65aac0adcf12137b7424",
+			"revision": "74ed9ef391f01a07546f971ba880334703cacdfb",
 			"branch": "master",
 			"notests": true
 		}
