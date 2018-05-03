@@ -133,3 +133,50 @@ func (s *testState) receive() []chf.CHF {
 
 	return flows
 }
+
+func BenchmarkEncode(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		flows := make([]flow.Flow, 100)
+
+		for i := 0; i < len(flows); i++ {
+			flows[i].DstAs = uint32(n)
+			flows[i].SrcAs = uint32(n)
+		}
+
+		_, err := encode(flows)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func encode(flows []flow.Flow) (*capnp.Message, error) {
+	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := chf.NewRootPackedCHF(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	msgs, err := root.NewMsgs(int32(len(flows)))
+	if err != nil {
+		return nil, err
+	}
+
+	for i, f := range flows {
+		var list chf.Custom_List
+		if n := int32(len(f.Customs)); n > 0 {
+			if list, err = chf.NewCustom_List(seg, n); err != nil {
+				return nil, err
+			}
+		}
+		f.FillCHF(msgs.At(i), list)
+	}
+
+	root.SetMsgs(msgs)
+
+	return msg, nil
+}
