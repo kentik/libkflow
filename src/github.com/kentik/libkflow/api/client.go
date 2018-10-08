@@ -30,11 +30,22 @@ type ClientConfig struct {
 }
 
 func NewClient(config ClientConfig) *Client {
-	transport := *(http.DefaultTransport.(*http.Transport))
-	transport.Proxy = nil
+	transport := &http.Transport{
+		Proxy: nil,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		DisableCompression:    false,
+	}
 
 	client := &http.Client{
-		Transport: &transport,
+		Transport: transport,
 		Timeout:   config.Timeout,
 	}
 
