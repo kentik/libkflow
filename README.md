@@ -19,9 +19,9 @@ channel which may be polled for asynchronous errors.
 
 ## C Usage
 
-[demo.c](demo.c) provides an example of correct API usage and will send
-one flow record to the test server which is expected to be running and
-listening on 127.0.0.1:8999.
+[demo.c](c/demo.c) provides an example of correct API usage and will
+send one flow record to the test server which is expected to be
+running and listening on 127.0.0.1:8999.
 
 ## Mock Server
 
@@ -35,7 +35,7 @@ listen on 127.0.0.1:8999 and accept some default values for
 authentication and device identification. A full demonstration program
 written in Go is available:
 
-[demo/main.go](src/github.com/kentik/libkflow/cmd/demo/main.go)
+[main.go](cmd/demo/main.go)
 
 ## Build
 

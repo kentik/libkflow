@@ -1,6 +1,6 @@
 MAIN := github.com/kentik/libkflow
 CLIB := $(MAIN)/cmd/libkflow
-PKGS := $(MAIN) $(MAIN)/api $(MAIN)/chf $(CLIB)
+PKGS := ./ api chf cmd/libkflow
 
 CFLAGS  += -std=c99
 
@@ -15,8 +15,8 @@ ARTIFACTS :=           \
     $(WORK)/libkflow.a \
     $(WORK)/server     \
     $(WORK)/demo       \
-    $(MAIN)/kflow.h    \
-    $(CURDIR)/demo.c
+    $(CURDIR)/kflow.h  \
+    $(CURDIR)/c/demo.c
 
 ifeq ($(OS), darwin)
 	LDFLAGS += -framework Security -framework CoreFoundation
@@ -27,7 +27,7 @@ endif
 file-types = .GoFiles .CgoFiles .HFiles
 
 find-files = $(foreach f,$(file-types),$(call list-files,$f,$1))
-list-files = $(shell go list -f '{{range $$f := $1}}$2/{{$$f}} {{end}}' $2)
+list-files = $(shell go list -f '{{range $$f := $1}}$2/{{$$f}} {{end}}' $(MAIN)/$2)
 
 # for each package in $(PKGS) define a variable named SRC_$(pkg)
 # containing all of the files in that package.
@@ -47,7 +47,7 @@ $(WORK)/libkflow.a: $(SRC)
 $(WORK)/server: $(SRC)
 	go build -o $@ -ldflags="-linkmode external" $(MAIN)/cmd/server
 
-$(WORK)/demo: $(MAIN)/kflow.h $(CURDIR)/demo.c $(WORK)/libkflow.a
+$(WORK)/demo: kflow.h $(CURDIR)/c/demo.c $(WORK)/libkflow.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -I $(<D) $(filter-out $<,$^)
 
 test:
