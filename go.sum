@@ -5,10 +5,14 @@ github.com/gorilla/context v1.1.1 h1:AWwleXJkX/nhcU9bZSnZoi3h/qGYqQAGhq6zZe/aQW8
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/mux v0.0.0-20170830053917-a659b61323b0 h1:QRJSVR2/F31YMlG7qyuXtdxb3GMZe+p2Va6O5wwkNKA=
 github.com/gorilla/mux v0.0.0-20170830053917-a659b61323b0/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
+github.com/gorilla/mux v1.6.2 h1:Pgr17XVTNXAk3q/r4CpKzC5xBM/qW1uVLV+IhRZpIIk=
+github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/influxdata/influxdb v0.0.0-20161108203946-ee4d04de4eb1/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
 github.com/influxdb/influxdb v0.0.0-20161108203946-ee4d04de4eb1/go.mod h1:GpjLgHRqWhDGlPAg7+Rj6NAYuzPojBM8XLG5Ouvvq+Q=
 github.com/jessevdk/go-flags v0.0.0-20161025193802-0648c820cd4e h1:l/+xY46pWbjciNv4PwYctnKUi7ks9Qx7c2SbDSwLwrc=
 github.com/jessevdk/go-flags v0.0.0-20161025193802-0648c820cd4e/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
+github.com/jessevdk/go-flags v1.4.0 h1:4IU2WS7AumrZ/40jfhf4QVDMsQwqA7VEHozFRrGARJA=
+github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/kentik/common v0.0.0-20161109201014-ef8ed24a7666 h1:MjDvzo6g6NtAuZAzN4MT2kfN/Ue+dN+VFUp+wrzLTV8=
 github.com/kentik/common v0.0.0-20161109201014-ef8ed24a7666/go.mod h1:VaJ+m+DAQ0GGcDd5sZ/1xV+7Lyzk2TYivusIQOpIYRI=
 github.com/kentik/go-metrics v0.0.0-20150701210649-d05a8439b0a0 h1:9n5bZT0CGjXPbO2ma185n2ZiKKcSrcTWK0lgxAwHarQ=
@@ -22,8 +26,12 @@ github.com/robfig/cron v0.0.0-20160927164231-9585fd555638/go.mod h1:JGuDeoQd7Z6y
 github.com/stathat/go v1.0.0/go.mod h1:+9Eg2szqkcOGWv6gfheJmBBsmq9Qf5KDbzy8/aYYR0c=
 github.com/stretchr/testify v0.0.0-20160925220609-976c720a22c8 h1:8wC8CPnIozQ1PGwYrFIxpYp10uhkEYhuTnoEJWrVj84=
 github.com/stretchr/testify v0.0.0-20160925220609-976c720a22c8/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
+github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 golang.org/x/net v0.0.0-20161027001906-c46f265c3251/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01 h1:po1f06KS05FvIQQA2pMuOWZAUXiy1KYdIf0ElUU2Hhc=
 golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 zombiezen.com/go/capnproto2 v0.0.0-20180220204753-74ed9ef391f0 h1:bO8GVvz0O6vtmTWhQjdn2UTvbxzdItn8AuMunkLOkKI=
 zombiezen.com/go/capnproto2 v0.0.0-20180220204753-74ed9ef391f0/go.mod h1:TMGa8HWGJkXiq4nHe9Zu/JgRF5oUtg4XizFC+Vexbec=
+zombiezen.com/go/capnproto2 v0.0.0-20181004142158-659aba4018b6 h1:IT9oUfETHpbV4uuqOmu1hqk/MYC2Gu0tpv33tnD5WWU=
+zombiezen.com/go/capnproto2 v0.0.0-20181004142158-659aba4018b6/go.mod h1:TMGa8HWGJkXiq4nHe9Zu/JgRF5oUtg4XizFC+Vexbec=

@@ -2,9 +2,9 @@
 github.com/davecgh/go-spew/spew
 # github.com/gorilla/context v1.1.1
 github.com/gorilla/context
-# github.com/gorilla/mux v0.0.0-20170830053917-a659b61323b0
+# github.com/gorilla/mux v1.6.2
 github.com/gorilla/mux
-# github.com/jessevdk/go-flags v0.0.0-20161025193802-0648c820cd4e
+# github.com/jessevdk/go-flags v1.4.0
 github.com/jessevdk/go-flags
 # github.com/kentik/common v0.0.0-20161109201014-ef8ed24a7666
 github.com/kentik/common/cmetrics/httptsdb
@@ -14,11 +14,11 @@ github.com/kentik/go-metrics
 github.com/pmezard/go-difflib/difflib
 # github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
 github.com/robfig/cron
-# github.com/stretchr/testify v0.0.0-20160925220609-976c720a22c8
+# github.com/stretchr/testify v1.2.2
 github.com/stretchr/testify/assert
 # golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01
 golang.org/x/net/context
-# zombiezen.com/go/capnproto2 v0.0.0-20180220204753-74ed9ef391f0
+# zombiezen.com/go/capnproto2 v0.0.0-20181004142158-659aba4018b6
 zombiezen.com/go/capnproto2
 zombiezen.com/go/capnproto2/encoding/text
 zombiezen.com/go/capnproto2/schemas

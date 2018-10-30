@@ -26,7 +26,7 @@ import (
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
 	"github.com/robfig/cron"
-	"zombiezen.com/go/capnproto2"
+	capnp "zombiezen.com/go/capnproto2"
 )
 
 type Server struct {
