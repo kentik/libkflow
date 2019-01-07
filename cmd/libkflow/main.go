@@ -124,6 +124,17 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 		go server.Start(sender.Metrics)
 	}
 
+	if cfg.dns.URL != nil {
+		url, err := url.Parse(C.GoString(cfg.dns.URL))
+		if err != nil {
+			fail("invalid DNS URL: %s", err)
+			return C.EKFLOWCONFIG
+		}
+
+		interval := time.Duration(cfg.dns.interval)
+		sender.StartDNS(url, interval*time.Second)
+	}
+
 	dev.id = C.uint64_t(sender.Device.ID)
 	dev.name = C.CString(sender.Device.Name)
 	dev.sample_rate = C.uint64_t(sender.Device.SampleRate)
@@ -173,6 +184,35 @@ func kflowError() *C.char {
 //export kflowVersion
 func kflowVersion() *C.char {
 	return C.CString(libkflow.Version)
+}
+
+//export kflowSendDNS
+func kflowSendDNS(q KflowDomainQuery, a *KflowDomainAnswer, n C.size_t) C.int {
+	bytes := func(b C.kflowByteSlice) []byte {
+		return C.GoBytes(unsafe.Pointer(b.ptr), C.int(b.len))
+	}
+
+	question := api.DNSQuestion{
+		Name: string(bytes(q.name)),
+		Host: net.IP(bytes(q.host)),
+	}
+
+	answers := make([]api.DNSResourceRecord, n)
+	for i, a := range (*[1 << 30]KflowDomainAnswer)(unsafe.Pointer(a))[:n:n] {
+		answers[i] = api.DNSResourceRecord{
+			IP:  net.IP(bytes(a.ip)),
+			TTL: uint32(a.ttl),
+		}
+	}
+
+	response := api.DNSResponse{
+		Question: question,
+		Answers:  answers,
+	}
+
+	sender.SendDNS(&response)
+
+	return 0
 }
 
 func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Config) (*libkflow.Sender, error) {
@@ -254,6 +294,11 @@ const (
 	EKFLOWNODEVICE = C.EKFLOWNODEVICE
 )
 
-type KflowConfig C.kflowConfig
-type KflowCustom C.kflowCustom
-type KflowDevice C.kflowDevice
+type (
+	KflowConfig       C.kflowConfig
+	KflowCustom       C.kflowCustom
+	KflowDevice       C.kflowDevice
+	KflowDomainQuery  C.kflowDomainQuery
+	KflowDomainAnswer C.kflowDomainAnswer
+	KflowByteSlice    C.kflowByteSlice
+)

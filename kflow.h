@@ -35,6 +35,11 @@ typedef struct {
         int port;                // status server port
     } status;
 
+    struct {
+        int interval;            // DNS flush interval (s)
+        char *URL;               // DNS data endpoint
+    } dns;
+
     int device_id;               // Kentik device ID
     char *device_if;             // Kentik device interface name
     char *device_ip;             // Kentik device IP
@@ -173,6 +178,27 @@ typedef struct {
     uint32_t numCustoms;         // custom field count
 } kflow;
 
+// struct kflowByteSlice defines a reference to a slice of bytes.
+typedef struct {
+    uint8_t *ptr;
+    size_t   len;
+} kflowByteSlice;
+
+// struct kflowDomainQuery describes a DNS query and the IP
+// of the host making the query.
+typedef struct {
+    kflowByteSlice name;
+    kflowByteSlice host;
+} kflowDomainQuery;
+
+// struct kflowDomainAnswer describes one DNS answer
+// corresponding to a kflowDomainQuery.
+typedef struct {
+   kflowByteSlice ip;
+   uint32_t       ttl;
+} kflowDomainAnswer;
+
+
 // kflowInit initializes the library and must be called prior
 // to any other functions. If a non-NULL pointer is passed as
 // the second parameter it will be set to an array of
@@ -202,6 +228,10 @@ char *kflowError();
 // kflowVersion returns a string describing the library version
 // which must be freed by the caller.
 char *kflowVersion();
+
+// kflowSendDNS asynchronously dispatches details of a DNS
+// query and one or more corresponding answers.
+int kflowSendDNS(kflowDomainQuery, kflowDomainAnswer *, size_t);
 
 // kflow error codes:
 

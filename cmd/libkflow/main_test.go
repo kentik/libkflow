@@ -200,7 +200,7 @@ func setupMainTest(t *testing.T) (*KflowConfig, *api.Device, *assert.Assertions)
 	version = append([]byte("0.0.1"), 0)
 
 	cfg := KflowConfig{
-		API: _Ctype_struct___4{
+		API: _Ctype_struct___5{
 			email: (*_Ctype_char)(unsafe.Pointer(&email[0])),
 			token: (*_Ctype_char)(unsafe.Pointer(&token[0])),
 			URL:   (*_Ctype_char)(unsafe.Pointer(&apiurl[0])),
