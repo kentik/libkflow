@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
@@ -38,6 +40,7 @@ type Server struct {
 	Log      *log.Logger
 	quiet    bool
 	flows    chan chf.PackedCHF
+	res      chan *api.DNSResponse
 	mux      *mux.Router
 	listener net.Listener
 }
@@ -52,6 +55,7 @@ const (
 	API  = "/api/internal"
 	FLOW = "/chf"
 	TSDB = "/tsdb"
+	DNS  = "/dns"
 )
 
 func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
@@ -82,6 +86,7 @@ func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
 		Log:      log.New(os.Stderr, "", log.LstdFlags),
 		quiet:    quiet,
 		flows:    make(chan chf.PackedCHF, 100),
+		res:      make(chan *api.DNSResponse, 100),
 		mux:      mux.NewRouter(),
 		listener: listener,
 	}, nil
@@ -98,6 +103,7 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.mux.HandleFunc(API+"/company/{cid}/device/{did}/tags/snmp", s.wrap(s.update))
 	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
 	s.mux.HandleFunc(TSDB, s.wrap(s.tsdb))
+	s.mux.HandleFunc(DNS, s.wrap(s.dns))
 
 	c := cron.New()
 	c.AddFunc("* * * * * *", func() {
@@ -120,6 +126,10 @@ func (s *Server) URL(path string) *url.URL {
 
 func (s *Server) Flows() <-chan chf.PackedCHF {
 	return s.flows
+}
+
+func (s *Server) Dns() <-chan *api.DNSResponse {
+	return s.res
 }
 
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {
@@ -259,6 +269,31 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 func (s *Server) tsdb(w http.ResponseWriter, r *http.Request) {
 	// just ignore it
 	io.Copy(ioutil.Discard, r.Body)
+}
+
+func (s *Server) dns(w http.ResponseWriter, r *http.Request) {
+	dec := gob.NewDecoder(r.Body)
+	for {
+		res := &api.DNSResponse{}
+
+		err := dec.Decode(&res)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			s.Log.Printf("gob decoding error: %s", err)
+			panic(http.StatusBadRequest)
+		}
+
+		if !s.quiet {
+			data := spew.Sdump(res)
+			s.Log.Output(0, data)
+		}
+
+		select {
+		case s.res <- res:
+		default:
+		}
+	}
 }
 
 func (s *Server) wrap(f handler) handler {

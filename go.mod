@@ -1,7 +1,7 @@
 module github.com/kentik/libkflow
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/glycerine/rbtree v0.0.0-20131204012554-cd7940bb26b1 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2

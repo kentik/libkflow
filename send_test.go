@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"testing"
 	"time"
 
-	"zombiezen.com/go/capnproto2"
-
 	"github.com/kentik/libkflow/agg"
+	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
 	"github.com/stretchr/testify/assert"
+	capnp "zombiezen.com/go/capnproto2"
 )
 
 func TestSender(t *testing.T) {
@@ -41,6 +42,37 @@ func TestSenderStop(t *testing.T) {
 	sender, _, assert := setup(t)
 	stopped := sender.Stop(100 * time.Millisecond)
 	assert.True(stopped)
+}
+
+func TestSendDNS(t *testing.T) {
+	sender, server, assert := setup(t)
+
+	url := server.URL(test.DNS)
+	sender.StartDNS(url, 1*time.Millisecond)
+
+	expected := &api.DNSResponse{
+		Question: api.DNSQuestion{
+			Name: "foo.com",
+			Host: net.ParseIP("127.0.0.1"),
+		},
+		Answers: []api.DNSResourceRecord{
+			{
+				Name:  "",
+				CNAME: "",
+				IP:    net.ParseIP("10.0.0.1"),
+				TTL:   16,
+			},
+		},
+	}
+
+	sender.SendDNS(expected)
+
+	select {
+	case res := <-server.Dns():
+		assert.Equal(expected, res)
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("failed to receive DNS data")
+	}
 }
 
 func BenchmarkSenderSend(b *testing.B) {

@@ -264,6 +264,22 @@ func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	return nil
 }
 
+func (c *Client) SendDNS(url string, buf *bytes.Buffer) error {
+	r, err := c.do("POST", url, "application/chfdns", buf)
+	if err != nil {
+		return err
+	}
+
+	defer r.Body.Close()
+	io.Copy(ioutil.Discard, r.Body)
+
+	if r.StatusCode != 200 {
+		return fmt.Errorf("api: HTTP status code %d", r.StatusCode)
+	}
+
+	return nil
+}
+
 func (c *Client) do(method, url, ctype string, body io.Reader) (*http.Response, error) {
 	r, err := http.NewRequest(method, url, body)
 	if err != nil {
