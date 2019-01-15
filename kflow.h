@@ -233,6 +233,11 @@ char *kflowVersion();
 // query and one or more corresponding answers.
 int kflowSendDNS(kflowDomainQuery, kflowDomainAnswer *, size_t);
 
+// kflowSendDNS asynchronously dispatches details of a DNS
+// query and one or more corresponding answers that have
+// already been encoded into the binary format.
+int kflowSendEncodedDNS(uint8_t *, size_t);
+
 // kflow error codes:
 
 #define EKFLOWCONFIG   1         // configuration invalid

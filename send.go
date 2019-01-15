@@ -2,7 +2,6 @@ package libkflow
 
 import (
 	"bytes"
-	"encoding/gob"
 	"net/url"
 	"os"
 	"sync"
@@ -13,6 +12,7 @@ import (
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/log"
 	"github.com/kentik/libkflow/metrics"
+	"github.com/tinylib/msgp/msgp"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -26,7 +26,7 @@ type Sender struct {
 	sample  int
 	ticker  *time.Ticker
 	workers sync.WaitGroup
-	dns     chan *api.DNSResponse
+	dns     chan []byte
 	Device  *api.Device
 	Errors  chan<- error
 	Metrics *metrics.Metrics
@@ -68,12 +68,27 @@ func (s *Sender) GetClient() *api.Client {
 }
 
 func (s *Sender) StartDNS(url *url.URL, interval time.Duration) {
-	s.dns = make(chan *api.DNSResponse, 1e5)
+	s.dns = make(chan []byte, 1e5)
 	go s.dispatchDNS(url.String(), interval)
 }
 
-func (s *Sender) SendDNS(res *api.DNSResponse) {
-	s.dns <- res
+func (s *Sender) SendDNS(res *api.DNSResponse) error {
+	buf := bytes.Buffer{}
+	enc := msgp.NewWriter(&buf)
+
+	err := res.EncodeMsg(enc)
+	if err != nil {
+		return err
+	}
+
+	enc.Flush()
+	s.dns <- buf.Bytes()
+
+	return nil
+}
+
+func (s *Sender) SendEncodedDNS(data []byte) {
+	s.dns <- data
 }
 
 func (s *Sender) start(agg *agg.Agg, client *api.Client, device *api.Device, n int) error {
@@ -128,14 +143,13 @@ func (s *Sender) dispatchDNS(url string, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 
 	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
 
 	for {
 		flush := false
 
 		select {
-		case res := <-s.dns:
-			enc.Encode(res)
+		case data := <-s.dns:
+			buf.Write(data)
 		case <-ticker.C:
 			flush = true
 		}
@@ -148,7 +162,6 @@ func (s *Sender) dispatchDNS(url string, interval time.Duration) {
 			}
 
 			buf.Reset()
-			enc = gob.NewEncoder(&buf)
 		}
 	}
 }

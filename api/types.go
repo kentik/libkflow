@@ -74,23 +74,6 @@ type Addr struct {
 	Netmask string `json:"netmask"`
 }
 
-type DNSQuestion struct {
-	Name string
-	Host net.IP
-}
-
-type DNSResourceRecord struct {
-	Name  string // unused
-	CNAME string
-	IP    net.IP
-	TTL   uint32
-}
-
-type DNSResponse struct {
-	Question DNSQuestion
-	Answers  []DNSResourceRecord
-}
-
 func (d *Device) ClientID() string {
 	return fmt.Sprintf("%d:%s:%d", d.CompanyID, d.Name, d.ID)
 }

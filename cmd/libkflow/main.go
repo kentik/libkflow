@@ -215,6 +215,13 @@ func kflowSendDNS(q KflowDomainQuery, a *KflowDomainAnswer, n C.size_t) C.int {
 	return 0
 }
 
+//export kflowSendEncodedDNS
+func kflowSendEncodedDNS(ptr *byte, len C.size_t) C.int {
+	data := C.GoBytes(unsafe.Pointer(ptr), C.int(len))
+	sender.SendEncodedDNS(data)
+	return 0
+}
+
 func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Config) (*libkflow.Sender, error) {
 	name := C.GoString(cfg.device_name)
 	ip := net.ParseIP(C.GoString(cfg.device_ip))

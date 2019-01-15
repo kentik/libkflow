@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,6 +27,7 @@ import (
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/chf"
 	"github.com/robfig/cron"
+	"github.com/tinylib/msgp/msgp"
 	capnp "zombiezen.com/go/capnproto2"
 )
 
@@ -272,16 +272,17 @@ func (s *Server) tsdb(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) dns(w http.ResponseWriter, r *http.Request) {
-	dec := gob.NewDecoder(r.Body)
+	dec := msgp.NewReader(r.Body)
 	for {
 		res := &api.DNSResponse{}
-
-		err := dec.Decode(&res)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			s.Log.Printf("gob decoding error: %s", err)
-			panic(http.StatusBadRequest)
+		err := res.DecodeMsg(dec)
+		if err != nil {
+			if msgp.Cause(err) == io.EOF {
+				break
+			} else {
+				s.Log.Printf("msgp decoding error: %s", err)
+				panic(http.StatusBadRequest)
+			}
 		}
 
 		if !s.quiet {
