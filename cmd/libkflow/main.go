@@ -124,7 +124,7 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 		go server.Start(sender.Metrics)
 	}
 
-	if cfg.dns.URL != nil {
+	if cfg.dns.enable != 0 {
 		url, err := url.Parse(C.GoString(cfg.dns.URL))
 		if err != nil {
 			fail("invalid DNS URL: %s", err)

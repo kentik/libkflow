@@ -154,7 +154,7 @@ func (s *Sender) dispatchDNS(url string, interval time.Duration) {
 			flush = true
 		}
 
-		if buf.Len() > 1e6 || flush {
+		if buf.Len() > 1e6 || flush && buf.Len() > 0 {
 			err := s.client.SendDNS(url, &buf)
 			if err != nil {
 				s.error(err)

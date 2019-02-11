@@ -36,6 +36,7 @@ typedef struct {
     } status;
 
     struct {
+        int enable;              // Enable DNS mode
         int interval;            // DNS flush interval (s)
         char *URL;               // DNS data endpoint
     } dns;
