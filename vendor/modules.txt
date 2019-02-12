@@ -10,12 +10,16 @@ github.com/jessevdk/go-flags
 github.com/kentik/common/cmetrics/httptsdb
 # github.com/kentik/go-metrics v0.0.0-20150701210649-d05a8439b0a0
 github.com/kentik/go-metrics
+# github.com/philhofer/fwd v1.0.0
+github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
 github.com/robfig/cron
 # github.com/stretchr/testify v1.2.2
 github.com/stretchr/testify/assert
+# github.com/tinylib/msgp v1.1.0
+github.com/tinylib/msgp/msgp
 # golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01
 golang.org/x/net/context
 # zombiezen.com/go/capnproto2 v0.0.0-20181004142158-659aba4018b6
