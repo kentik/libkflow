@@ -19,7 +19,7 @@ type Flow struct {
 	TimestampNano      int64
 	DstAs              uint32
 	DstGeo             uint32
-	DstMac             uint32
+	DstMac             uint32 // IGNORED - use DstEthMac
 	HeaderLen          uint32
 	InBytes            uint64
 	InPkts             uint64
@@ -34,7 +34,7 @@ type Flow struct {
 	SampledPacketSize  uint32
 	SrcAs              uint32
 	SrcGeo             uint32
-	SrcMac             uint32
+	SrcMac             uint32 // IGNORED - use SrcEthMac
 	TcpFlags           uint32
 	Tos                uint32
 	VlanIn             uint32
