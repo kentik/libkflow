@@ -12,7 +12,8 @@ import (
 
 type Agg struct {
 	output    chan *capnp.Message
-	done      chan struct{}
+	quitting  chan struct{} // closed when we're shutting down
+	done      chan struct{} // closed when we're all done
 	errors    chan error
 	interval  time.Duration
 	ticker    *time.Ticker
@@ -33,6 +34,7 @@ const MaxFlowBuffer = 8
 func NewAgg(interval time.Duration, fps int, metrics *metrics.Metrics) (*Agg, error) {
 	a := &Agg{
 		output:   make(chan *capnp.Message),
+		quitting: make(chan struct{}),
 		done:     make(chan struct{}),
 		errors:   make(chan error, 100),
 		interval: interval,
@@ -60,7 +62,12 @@ func (a *Agg) Configure(fps int) {
 }
 
 func (a *Agg) Stop() {
-	a.done <- struct{}{}
+	select {
+	case <-a.quitting:
+		// already closed
+	default:
+		close(a.quitting)
+	}
 }
 
 func (a *Agg) Output() <-chan *capnp.Message {
@@ -89,10 +96,10 @@ func (a *Agg) aggregate() {
 		select {
 		case <-a.ticker.C:
 			a.dispatch()
-		case <-a.done:
+		case <-a.quitting:
 			a.dispatch()
 			close(a.output)
-			a.done <- struct{}{}
+			close(a.done)
 			return
 		}
 	}
