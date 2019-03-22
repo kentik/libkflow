@@ -42,6 +42,10 @@ type DeviceCreate struct {
 	SiteID      int      `json:"site_id,omitempty"`
 	IPs         []net.IP `json:"sending_ips"`
 	CdnAttr     string   `json:"cdn_attr"`
+	ExportId    int      `json:"cloud_export_id"`
+	Subtype     string   `json:"device_subtype"`
+	Region      string   `json:"cloud_region"`
+	Zone        string   `json:"cloud_zone"`
 }
 
 type DeviceWrapper struct {
