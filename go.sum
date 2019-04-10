@@ -1,3 +1,5 @@
+github.com/cloudhelix/golog v0.0.0-20180824173632-e2ac67cc4105 h1:OqSLYNPWi23sbMXMO5zhtFnmE2t/G2qIHkObkMeUL/4=
+github.com/cloudhelix/golog v0.0.0-20180824173632-e2ac67cc4105/go.mod h1:BWnGEa6LyK7tETHsTgcU9Ix5qRH3YUXIlbdTqJlok10=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/glycerine/rbtree v0.0.0-20131204012554-cd7940bb26b1/go.mod h1:tf1G9WLJXoNEQ5TWYvCSkqsOepuCNCJebECwJ/B/64I=
@@ -15,6 +17,8 @@ github.com/jessevdk/go-flags v1.4.0 h1:4IU2WS7AumrZ/40jfhf4QVDMsQwqA7VEHozFRrGAR
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/kentik/common v0.0.0-20161109201014-ef8ed24a7666 h1:MjDvzo6g6NtAuZAzN4MT2kfN/Ue+dN+VFUp+wrzLTV8=
 github.com/kentik/common v0.0.0-20161109201014-ef8ed24a7666/go.mod h1:VaJ+m+DAQ0GGcDd5sZ/1xV+7Lyzk2TYivusIQOpIYRI=
+github.com/kentik/common v0.0.0-20190403165712-a185947a74e6 h1:wgAy7LAxY9QZ7avJm/fhvZQelyoKD1sKEWGzKnKKXCE=
+github.com/kentik/common v0.0.0-20190403165712-a185947a74e6/go.mod h1:VaJ+m+DAQ0GGcDd5sZ/1xV+7Lyzk2TYivusIQOpIYRI=
 github.com/kentik/go-metrics v0.0.0-20150701210649-d05a8439b0a0 h1:9n5bZT0CGjXPbO2ma185n2ZiKKcSrcTWK0lgxAwHarQ=
 github.com/kentik/go-metrics v0.0.0-20150701210649-d05a8439b0a0/go.mod h1:29P02QqC48eCWcb9A4HvtEQypXkw5T9U9DxF1fn/kbs=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=

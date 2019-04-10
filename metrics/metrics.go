@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kentik/common/cmetrics/httptsdb"
+	"github.com/kentik/common/cmetrics"
 	"github.com/kentik/go-metrics"
 )
 
@@ -59,7 +59,7 @@ func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy 
 		proxyURL = proxy.String()
 	}
 
-	go httptsdb.OpenTSDBWithConfig(httptsdb.OpenTSDBConfig{
+	go cmetrics.OpenHTTPTSDBWithConfig(cmetrics.OpenHTTPTSDBConfig{
 		Addr:               url,
 		Registry:           metrics.DefaultRegistry,
 		FlushInterval:      interval,

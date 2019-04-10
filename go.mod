@@ -1,6 +1,7 @@
 module github.com/kentik/libkflow
 
 require (
+	github.com/cloudhelix/golog v0.0.0-20180824173632-e2ac67cc4105 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/glycerine/rbtree v0.0.0-20131204012554-cd7940bb26b1 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
@@ -8,7 +9,7 @@ require (
 	github.com/influxdata/influxdb v0.0.0-20161108203946-ee4d04de4eb1 // indirect
 	github.com/influxdb/influxdb v0.0.0-20161108203946-ee4d04de4eb1 // indirect
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/kentik/common v0.0.0-20161109201014-ef8ed24a7666
+	github.com/kentik/common v0.0.0-20190403165712-a185947a74e6
 	github.com/kentik/go-metrics v0.0.0-20150701210649-d05a8439b0a0
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
