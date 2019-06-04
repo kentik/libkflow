@@ -269,10 +269,28 @@ func populateCustoms(device *api.Device, ptr **C.kflowCustom, cnt *C.uint32_t) {
 		switch c.Type {
 		case "string":
 			vtype = C.KFLOWCUSTOMSTR
+		case "byte":
+			vtype = C.KFLOWCUSTOMU8
+		case "uint16":
+			vtype = C.KFLOWCUSTOMU16
 		case "uint32":
 			vtype = C.KFLOWCUSTOMU32
+		case "uint64":
+			vtype = C.KFLOWCUSTOMU64
+		case "int8":
+			vtype = C.KFLOWCUSTOMI8
+		case "int16":
+			vtype = C.KFLOWCUSTOMI16
+		case "int32":
+			vtype = C.KFLOWCUSTOMI32
+		case "int64":
+			vtype = C.KFLOWCUSTOMI64
 		case "float32":
 			vtype = C.KFLOWCUSTOMF32
+		case "float64":
+			vtype = C.KFLOWCUSTOMF64
+		case "addr":
+			vtype = C.KFLOWCUSTOMADDR
 		}
 
 		customs[i] = C.kflowCustom{

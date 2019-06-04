@@ -3,6 +3,7 @@ package flow
 // #include "../kflow.h"
 import "C"
 import (
+	"net"
 	"reflect"
 	"unsafe"
 
@@ -80,6 +81,7 @@ type Flow struct {
 	Ipv6DstNextHop     []byte
 	Ipv6SrcRoutePrefix []byte
 	Ipv6DstRoutePrefix []byte
+	IsMetric           bool
 	Customs            []Custom
 }
 
@@ -87,16 +89,34 @@ type Type int
 
 const (
 	Str Type = iota
+	U8
+	U16
 	U32
+	U64
+	I8
+	I16
+	I32
+	I64
 	F32
+	F64
+	Addr
 )
 
 type Custom struct {
 	ID   uint32
 	Type Type
 	Str  string
+	U8   byte
+	U16  uint16
 	U32  uint32
+	U64  uint64
+	I8   int8
+	I16  int16
+	I32  int32
+	I64  int64
 	F32  float32
+	F64  float64
+	Addr [17]byte
 }
 
 func New(cflow *Ckflow) Flow {
@@ -165,6 +185,7 @@ func New(cflow *Ckflow) Flow {
 		Ipv6DstNextHop:     bts(cflow.ipv6DstNextHop, 16),
 		Ipv6SrcRoutePrefix: bts(cflow.ipv6SrcRoutePrefix, 16),
 		Ipv6DstRoutePrefix: bts(cflow.ipv6DstRoutePrefix, 16),
+		IsMetric:           cflow.isMetric == 1,
 		Customs:            newCustoms(cflow),
 	}
 }
@@ -234,6 +255,7 @@ func (f *Flow) FillCHF(kflow chf.CHF, list chf.Custom_List) {
 	kflow.SetIpv6DstNextHop(f.Ipv6DstNextHop)
 	kflow.SetIpv6SrcRoutePrefix(f.Ipv6SrcRoutePrefix)
 	kflow.SetIpv6DstRoutePrefix(f.Ipv6DstRoutePrefix)
+	kflow.SetIsMetric(f.IsMetric)
 
 	for i, c := range f.Customs {
 		kc := list.At(i)
@@ -242,14 +264,42 @@ func (f *Flow) FillCHF(kflow chf.CHF, list chf.Custom_List) {
 		switch c.Type {
 		case Str:
 			kc.Value().SetStrVal(c.Str)
+		case U8:
+			kc.Value().SetUint8Val(c.U8)
+		case U16:
+			kc.Value().SetUint16Val(c.U16)
 		case U32:
 			kc.Value().SetUint32Val(c.U32)
+		case U64:
+			kc.Value().SetUint64Val(c.U64)
+		// case I8:
+		// 	kc.Value().SetInt8Val(c.I8)
+		// case I16:
+		// 	kc.Value().SetInt16Val(c.I16)
+		// case I32:
+		// 	kc.Value().SetInt32Val(c.I32)
+		// case I64:
+		// 	kc.Value().SetInt64Val(c.I64)
 		case F32:
 			kc.Value().SetFloat32Val(c.F32)
+		// case F64:
+		// 	kc.Value().SetFloat64Val(c.F64)
+		case Addr:
+			kc.Value().SetAddrVal(c.Addr[:])
 		}
 	}
 
 	kflow.SetCustom(list)
+}
+
+func (c *Custom) SetAddr(ip net.IP) {
+	if ipv4 := ip.To4(); ipv4 != nil {
+		c.Addr[0] = 4
+		copy(c.Addr[1:], ipv4)
+	} else if ipv6 := ip.To16(); ipv6 != nil {
+		c.Addr[0] = 6
+		copy(c.Addr[1:], ipv6)
+	}
 }
 
 func newCustoms(cflow *Ckflow) []Custom {
@@ -270,12 +320,39 @@ func newCustoms(cflow *Ckflow) []Custom {
 		case C.KFLOWCUSTOMSTR:
 			custom.Type = Str
 			custom.Str = trunc(C.GoString(*(**C.char)(p)))
+		case C.KFLOWCUSTOMU8:
+			custom.Type = U8
+			custom.U8 = uint8(*(*C.uint8_t)(p))
+		case C.KFLOWCUSTOMU16:
+			custom.Type = U16
+			custom.U16 = uint16(*(*C.uint16_t)(p))
 		case C.KFLOWCUSTOMU32:
 			custom.Type = U32
 			custom.U32 = uint32(*(*C.uint32_t)(p))
+		case C.KFLOWCUSTOMU64:
+			custom.Type = U64
+			custom.U64 = uint64(*(*C.uint64_t)(p))
+		case C.KFLOWCUSTOMI8:
+			custom.Type = I8
+			custom.I8 = int8(*(*C.int8_t)(p))
+		case C.KFLOWCUSTOMI16:
+			custom.Type = I16
+			custom.I16 = int16(*(*C.int16_t)(p))
+		case C.KFLOWCUSTOMI32:
+			custom.Type = I32
+			custom.I32 = int32(*(*C.int32_t)(p))
+		case C.KFLOWCUSTOMI64:
+			custom.Type = I64
+			custom.I64 = int64(*(*C.int64_t)(p))
 		case C.KFLOWCUSTOMF32:
 			custom.Type = F32
 			custom.F32 = float32(*(*C.float)(p))
+		case C.KFLOWCUSTOMF64:
+			custom.Type = F64
+			custom.F64 = float64(*(*C.double)(p))
+		case C.KFLOWCUSTOMADDR:
+			custom.Type = Addr
+			custom.Addr = *(*[17]byte)(p)
 		}
 	}
 
