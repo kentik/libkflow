@@ -184,6 +184,50 @@ func TestInitStatusServer(t *testing.T) {
 	assert.Equal(200, r.StatusCode)
 }
 
+func TestPopulateCustoms(t *testing.T) {
+	assert := assert.New(t)
+
+	device := api.Device{
+		Customs: []api.Column{
+			{1, "string", "string"},
+			{2, "byte", "byte"},
+			{3, "uint16", "uint16"},
+			{4, "uint32", "uint32"},
+			{5, "uint64", "uint64"},
+			{6, "int8", "int8"},
+			{7, "int16", "int16"},
+			{8, "int32", "int32"},
+			{9, "int64", "int64"},
+			{10, "float32", "float32"},
+			{11, "float64", "float64"},
+			{12, "addr", "addr"},
+		},
+	}
+
+	var ptr *_Ctype_struct___1
+	var len _Ctype_uint32_t
+	populateCustoms(&device, &ptr, &len)
+
+	columns := *(*[]KflowCustom)(unsafe.Pointer(&reflect.SliceHeader{
+		Data: (uintptr)(unsafe.Pointer(ptr)),
+		Len:  int(len),
+		Cap:  int(len),
+	}))
+
+	assert.Equal(columns[0].vtype, _Ctype_int(1))
+	assert.Equal(columns[1].vtype, _Ctype_int(2))
+	assert.Equal(columns[2].vtype, _Ctype_int(3))
+	assert.Equal(columns[3].vtype, _Ctype_int(4))
+	assert.Equal(columns[4].vtype, _Ctype_int(5))
+	assert.Equal(columns[5].vtype, _Ctype_int(6))
+	assert.Equal(columns[6].vtype, _Ctype_int(7))
+	assert.Equal(columns[7].vtype, _Ctype_int(8))
+	assert.Equal(columns[8].vtype, _Ctype_int(9))
+	assert.Equal(columns[9].vtype, _Ctype_int(10))
+	assert.Equal(columns[10].vtype, _Ctype_int(11))
+	assert.Equal(columns[11].vtype, _Ctype_int(12))
+}
+
 func setupMainTest(t *testing.T) (*KflowConfig, *api.Device, *assert.Assertions) {
 	client, server, device, err := test.NewClientServer()
 	if err != nil {

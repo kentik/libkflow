@@ -3,6 +3,7 @@ package flow
 import (
 	"bytes"
 	"math/rand"
+	"net"
 	"reflect"
 	"runtime"
 	"strings"
@@ -11,8 +12,7 @@ import (
 
 	"github.com/kentik/libkflow/chf"
 	"github.com/stretchr/testify/assert"
-
-	"zombiezen.com/go/capnproto2"
+	capnp "zombiezen.com/go/capnproto2"
 )
 
 func TestFlowRoundtrip(t *testing.T) {
@@ -163,10 +163,28 @@ func TestFlowRoundtrip(t *testing.T) {
 func TestCustomRoundtrip(t *testing.T) {
 	assert := assert.New(t)
 
+	addr := func(s string) [17]byte {
+		bytes := [17]byte{}
+		ip := net.ParseIP(s)
+		if ipv4 := ip.To4(); ipv4 != nil {
+			bytes[0] = 4
+			copy(bytes[1:], ipv4)
+		} else if ipv6 := ip.To16(); ipv6 != nil {
+			bytes[0] = 6
+			copy(bytes[1:], ipv6)
+		}
+		return bytes
+	}
+
 	customs := []Custom{
 		{ID: 1, Type: Str, Str: string("foo")},
-		{ID: 2, Type: U32, U32: uint32(42)},
-		{ID: 3, Type: F32, F32: float32(3.14)},
+		{ID: 2, Type: U8, U8: uint8(7)},
+		{ID: 3, Type: U16, U16: uint16(19)},
+		{ID: 4, Type: U32, U32: uint32(42)},
+		{ID: 5, Type: U64, U64: uint64(103)},
+		{ID: 7, Type: F32, F32: float32(3.14)},
+		{ID: 8, Type: Addr, Addr: addr("10.0.0.1")},
+		{ID: 9, Type: Addr, Addr: addr("2404:6800:4004:818::200e")},
 	}
 
 	ckcust := make([]_Ctype_kflowCustom, len(customs))
@@ -196,14 +214,30 @@ func TestCustomRoundtrip(t *testing.T) {
 			val, _ := c.Value().StrVal()
 			assert.Equal(chf.Custom_value_Which_strVal, c.Value().Which())
 			assert.Equal(customs[i].Str, val)
+		case U8:
+			val := c.Value().Uint8Val()
+			assert.Equal(chf.Custom_value_Which_uint8Val, c.Value().Which())
+			assert.Equal(customs[i].U8, val)
+		case U16:
+			val := c.Value().Uint16Val()
+			assert.Equal(chf.Custom_value_Which_uint16Val, c.Value().Which())
+			assert.Equal(customs[i].U16, val)
 		case U32:
 			val := c.Value().Uint32Val()
 			assert.Equal(chf.Custom_value_Which_uint32Val, c.Value().Which())
 			assert.Equal(customs[i].U32, val)
+		case U64:
+			val := c.Value().Uint64Val()
+			assert.Equal(chf.Custom_value_Which_uint64Val, c.Value().Which())
+			assert.Equal(customs[i].U64, val)
 		case F32:
 			val := c.Value().Float32Val()
 			assert.Equal(chf.Custom_value_Which_float32Val, c.Value().Which())
 			assert.Equal(customs[i].F32, val)
+		case Addr:
+			val, _ := c.Value().AddrVal()
+			assert.Equal(chf.Custom_value_Which_addrVal, c.Value().Which())
+			assert.Equal(customs[i].Addr[:], val[:])
 		default:
 			t.Fatal("unsupported custom column type", customs[i].Type)
 		}
@@ -348,12 +382,39 @@ func (c *Custom) ToC() _Ctype_kflowCustom {
 			array[i] = _Ctype_char(c)
 		}
 		*(**_Ctype_char)(p) = &array[0]
-	case U32:
+	case U8:
 		kc.vtype = 2
-		*(*_Ctype_uint32_t)(p) = _Ctype_uint32_t(c.U32)
-	case F32:
+		*(*_Ctype_uint8_t)(p) = _Ctype_uint8_t(c.U8)
+	case U16:
 		kc.vtype = 3
+		*(*_Ctype_uint16_t)(p) = _Ctype_uint16_t(c.U16)
+	case U32:
+		kc.vtype = 4
+		*(*_Ctype_uint32_t)(p) = _Ctype_uint32_t(c.U32)
+	case U64:
+		kc.vtype = 5
+		*(*_Ctype_uint64_t)(p) = _Ctype_uint64_t(c.U64)
+	case I8:
+		kc.vtype = 6
+		*(*_Ctype_int8_t)(p) = _Ctype_int8_t(c.I8)
+	case I16:
+		kc.vtype = 7
+		*(*_Ctype_int16_t)(p) = _Ctype_int16_t(c.I16)
+	case I32:
+		kc.vtype = 8
+		*(*_Ctype_int32_t)(p) = _Ctype_int32_t(c.I32)
+	case I64:
+		kc.vtype = 9
+		*(*_Ctype_int64_t)(p) = _Ctype_int64_t(c.I64)
+	case F32:
+		kc.vtype = 10
 		*(*_Ctype_float)(p) = _Ctype_float(c.F32)
+	case F64:
+		kc.vtype = 11
+		*(*_Ctype_double)(p) = _Ctype_double(c.F32)
+	case Addr:
+		kc.vtype = 12
+		copy((*[17]byte)(p)[:], c.Addr[:])
 	}
 
 	return kc

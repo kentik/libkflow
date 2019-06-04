@@ -63,9 +63,18 @@ typedef struct {
     uint64_t id;                 // field ID
     int vtype;                   // value type
     union {
-        char *str;               // string value
+        char    *str;            // string value
+        uint8_t  u8;             // uint8 value
+        uint16_t u16;            // uint16 value
         uint32_t u32;            // uint32 value
-        float f32;               // float32 value
+        uint64_t u64;            // uint64 value
+        int8_t   i8;             // int8 value
+        int16_t  i16;            // int16 value
+        int32_t  i32;            // int32 value
+        int64_t  i64;            // int64 value
+        float    f32;            // float32 value
+        double   f64;            // float64 value
+        uint8_t  addr[17];       // inet value
     } value;                     // field value
 } kflowCustom;
 
@@ -101,9 +110,18 @@ typedef struct {
 
 // kflow custom field value types:
 
-#define KFLOWCUSTOMSTR 1
-#define KFLOWCUSTOMU32 2
-#define KFLOWCUSTOMF32 3
+#define KFLOWCUSTOMSTR    1
+#define KFLOWCUSTOMU8     2
+#define KFLOWCUSTOMU16    3
+#define KFLOWCUSTOMU32    4
+#define KFLOWCUSTOMU64    5
+#define KFLOWCUSTOMI8     6
+#define KFLOWCUSTOMI16    7
+#define KFLOWCUSTOMI32    8
+#define KFLOWCUSTOMI64    9
+#define KFLOWCUSTOMF32   10
+#define KFLOWCUSTOMF64   11
+#define KFLOWCUSTOMADDR  12
 
 // struct kflow defines the flow fields that may be sent to Kentik.
 // MAC and IPv4 addresses are represented as bytes packed in network
@@ -174,6 +192,7 @@ typedef struct {
     uint8_t *ipv6DstNextHop;     // dst IPv6 nexthop
     uint8_t *ipv6SrcRoutePrefix; // src IPv6 route prefix
     uint8_t *ipv6DstRoutePrefix; // dst IPv6 route prefix
+    uint8_t isMetric;
 
     kflowCustom *customs;        // custom field array
     uint32_t numCustoms;         // custom field count
