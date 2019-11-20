@@ -238,12 +238,13 @@ func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Con
 
 	return libkflow.NewSenderWithNewDevice(&api.DeviceCreate{
 		Name:        name,
-		Type:        "kprobe",
+		Type:        "host-nprobe-dns-www",
 		Description: name,
 		SampleRate:  1,
 		BgpType:     "none",
 		PlanID:      planID,
 		SiteID:      siteID,
+		Subtype:     "kprobe",
 		IPs:         []net.IP{ip},
 		CdnAttr:     "N",
 	}, errors, config)
