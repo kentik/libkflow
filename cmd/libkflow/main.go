@@ -244,6 +244,7 @@ func tryCreateDevice(cfg *KflowConfig, errors chan<- error, config *libkflow.Con
 		BgpType:     "none",
 		PlanID:      planID,
 		SiteID:      siteID,
+		Subtype:     "kprobe",
 		IPs:         []net.IP{ip},
 		CdnAttr:     "N",
 	}, errors, config)
