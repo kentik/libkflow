@@ -32,6 +32,18 @@ type Column struct {
 	Type string `json:"col_type"`
 }
 
+type SiteAndDeviceCreate struct {
+	Site   *SiteCreate   `json:"site"`
+	Device *DeviceCreate `json:"device"`
+}
+
+type SiteCreate struct {
+	Title   string `json:"title"`
+	City    string `json:"city,omitempty"`
+	Region  string `json:"region,omitempty"`
+	Country string `json:"country,omitempty"`
+}
+
 type DeviceCreate struct {
 	Name        string   `json:"device_name"`
 	Type        string   `json:"device_type"`
@@ -89,4 +101,8 @@ func (c *Column) UnmarshalFlag(value string) error {
 func (c Column) MarshalFlag() (string, error) {
 	b, err := json.Marshal(c)
 	return string(b), err
+}
+
+func (c *DeviceCreate) NormalizeName() {
+	c.Name = NormalizeName(c.Name)
 }

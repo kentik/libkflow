@@ -15,17 +15,18 @@ import (
 
 // Config describes the libkflow configuration.
 type Config struct {
-	email   string
-	token   string
-	capture Capture
-	proxy   *url.URL
-	api     *url.URL
-	flow    *url.URL
-	metrics *url.URL
-	sample  int
-	timeout time.Duration
-	program string
-	version string
+	email           string
+	token           string
+	capture         Capture
+	proxy           *url.URL
+	api             *url.URL
+	flow            *url.URL
+	metrics         *url.URL
+	sample          int
+	timeout         time.Duration
+	program         string
+	version         string
+	metricsInterval time.Duration
 }
 
 // Capture describes the packet capture settings.
@@ -99,6 +100,14 @@ func (c *Config) NewMetrics(dev *api.Device) *metrics.Metrics {
 	return metrics.New(dev.ClientID(), c.program, c.version)
 }
 
+func (c *Config) GetClient() *api.Client {
+	return c.client()
+}
+
+func (c *Config) SetMetricsInterval(dur time.Duration) {
+	c.metricsInterval = dur
+}
+
 func (c *Config) client() *api.Client {
 	return api.NewClient(api.ClientConfig{
 		Email:   c.email,
@@ -110,9 +119,11 @@ func (c *Config) client() *api.Client {
 }
 
 func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error) (*Sender, error) {
-	interval := time.Duration(1) * time.Minute
+	if c.metricsInterval == 0 {
+		c.metricsInterval = 60 * time.Second
+	}
 	metrics := c.NewMetrics(dev)
-	metrics.Start(c.metrics.String(), c.email, c.token, interval, c.proxy)
+	metrics.Start(c.metrics.String(), c.email, c.token, c.metricsInterval, c.proxy)
 
 	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, metrics)
 	if err != nil {
