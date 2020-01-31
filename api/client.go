@@ -14,10 +14,10 @@ import (
 )
 
 type Client struct {
-	Email     string
-	Token     string
+	ClientConfig
 	deviceURL string
 	updateURL string
+	statusURL string
 	*http.Client
 }
 
@@ -28,6 +28,19 @@ type ClientConfig struct {
 	API     *url.URL
 	Proxy   *url.URL
 }
+
+type ExportStatus struct {
+	ID      int    `json:"export_id"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+const (
+	EXPORT_STATUS_OK    = "OK"
+	EXPORT_STATUS_ERROR = "ERROR"
+	EXPORT_STATUS_START = "START"
+	EXPORT_STATUS_HALT  = "HALT"
+)
 
 func NewClient(config ClientConfig) *Client {
 	transport := &http.Transport{
@@ -54,11 +67,11 @@ func NewClient(config ClientConfig) *Client {
 	}
 
 	return &Client{
-		Email:     config.Email,
-		Token:     config.Token,
-		deviceURL: config.API.String() + "/device/%v",
-		updateURL: config.API.String() + "/company/%v/device/%v/tags/snmp",
-		Client:    client,
+		ClientConfig: config,
+		deviceURL:    config.API.String() + "/device/%v",
+		updateURL:    config.API.String() + "/company/%v/device/%v/tags/snmp",
+		statusURL:    config.API.String() + "/cloudExport/status/%v",
+		Client:       client,
 	}
 }
 
@@ -116,8 +129,52 @@ func (c *Client) getdevice(url string) (*Device, error) {
 	return dw.Device, nil
 }
 
+func (c *Client) CreateDeviceAndSite(siteDevCreate *SiteAndDeviceCreate) (*Device, error) {
+
+	if len(siteDevCreate.Device.IPs) == 0 {
+		return nil, fmt.Errorf("Missing IP for device")
+	}
+
+	createUrl := c.API.String() + "/deviceAndSite"
+
+	// Remove chars which result in 500
+	siteDevCreate.Device.NormalizeName()
+
+	body, err := json.Marshal(siteDevCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := c.do("POST", createUrl, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	if r.StatusCode != 200 && r.StatusCode != 201 {
+		return nil, c.error(r)
+	}
+
+	dw := &DeviceWrapper{}
+	if err := json.NewDecoder(r.Body).Decode(dw); err != nil {
+		return nil, fmt.Errorf("response decoding error: %v", err)
+	}
+
+	// device structure returned from create call doesn't include necessary
+	// fields like custom columns, so make another API call.
+
+	return c.GetDeviceByID(dw.Device.ID)
+}
+
 func (c *Client) CreateDevice(create *DeviceCreate) (*Device, error) {
 	url := fmt.Sprintf(c.deviceURL, "")
+
+	if len(create.IPs) == 0 {
+		return nil, fmt.Errorf("Missing IP for device")
+	}
+
+	// Remove chars which result in 500
+	create.NormalizeName()
 
 	body, err := json.Marshal(map[string]*DeviceCreate{
 		"device": create,
@@ -259,6 +316,36 @@ func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 
 	if r.StatusCode != 200 {
 		return fmt.Errorf("api: HTTP status code %d", r.StatusCode)
+	}
+
+	return nil
+}
+
+func (e *ExportStatus) Set(s string, m string) *ExportStatus {
+	e.Status = s
+	e.Message = m
+	return e
+}
+
+// /internal/cloudExport/status/:id
+// body expects `{status: string, message: string}`
+func (c *Client) UpdateExportStatus(status *ExportStatus) error {
+	url := fmt.Sprintf(c.statusURL, status.ID)
+
+	body, err := json.Marshal(status)
+	if err != nil {
+		return err
+	}
+
+	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+	io.Copy(ioutil.Discard, r.Body)
+
+	if r.StatusCode != 200 {
+		return &Error{StatusCode: r.StatusCode}
 	}
 
 	return nil

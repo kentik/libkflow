@@ -20,3 +20,5 @@ require (
 	github.com/tinylib/msgp v1.1.0
 	zombiezen.com/go/capnproto2 v0.0.0-20181004142158-659aba4018b6
 )
+
+go 1.13
