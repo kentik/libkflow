@@ -10,6 +10,7 @@ type Device struct {
 	ID          int      `json:"id,string"`
 	Name        string   `json:"device_name"`
 	Type        string   `json:"device_type"`
+	Subtype     string   `json:"device_subtype"`
 	Description string   `json:"device_description"`
 	IP          net.IP   `json:"ip"`
 	SampleRate  int      `json:"device_sample_rate,string"`
