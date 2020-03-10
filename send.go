@@ -2,6 +2,7 @@ package libkflow
 
 import (
 	"bytes"
+	"compress/gzip"
 	"net/url"
 	"os"
 	"sync"
@@ -117,19 +118,20 @@ func (s *Sender) dispatch() {
 	buf := &bytes.Buffer{}
 	cid := [80]byte{}
 	url := s.url.String()
+	z := gzip.NewWriter(buf)
 
 	for msg := range s.agg.Output() {
 		log.Debugf("dispatching aggregated flow")
+		z.Reset(buf)
+		z.Write(cid[:])
 
-		buf.Reset()
-		buf.Write(cid[:])
-
-		err := capnp.NewPackedEncoder(buf).Encode(msg)
+		err := capnp.NewPackedEncoder(z).Encode(msg)
 		if err != nil {
 			s.error(err)
 			continue
 		}
 
+		z.Close()
 		err = s.client.SendFlow(url, buf)
 		if err != nil {
 			s.error(err)

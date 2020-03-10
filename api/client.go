@@ -111,7 +111,7 @@ func (c *Client) GetDeviceByIF(name string) (*Device, error) {
 }
 
 func (c *Client) getdevice(url string) (*Device, error) {
-	r, err := c.do("GET", url, "application/json", nil)
+	r, err := c.do("GET", url, "application/json", nil, false)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (c *Client) CreateDeviceAndSite(siteDevCreate *SiteAndDeviceCreate) (*Devic
 		return nil, err
 	}
 
-	r, err := c.do("POST", createUrl, "application/json", bytes.NewBuffer(body))
+	r, err := c.do("POST", createUrl, "application/json", bytes.NewBuffer(body), false)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (c *Client) CreateDevice(create *DeviceCreate) (*Device, error) {
 		return nil, err
 	}
 
-	r, err := c.do("POST", url, "application/json", bytes.NewBuffer(body))
+	r, err := c.do("POST", url, "application/json", bytes.NewBuffer(body), false)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ func (c *Client) CreateDevice(create *DeviceCreate) (*Device, error) {
 func (c *Client) GetInterfaces(did int) ([]Interface, error) {
 	url := fmt.Sprintf(c.deviceURL+"/interfaces", did)
 
-	r, err := c.do("GET", url, "application/json", nil)
+	r, err := c.do("GET", url, "application/json", nil, false)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (c *Client) UpdateInterfaces(dev *Device, nif *net.Interface) error {
 		return err
 	}
 
-	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body))
+	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body), false)
 	if err != nil {
 		return err
 	}
@@ -291,7 +291,7 @@ func (c *Client) UpdateInterfacesDirectly(dev *Device, updates map[string]Interf
 		return err
 	}
 
-	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body))
+	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body), false)
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,7 @@ func (c *Client) UpdateInterfacesDirectly(dev *Device, updates map[string]Interf
 }
 
 func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
-	r, err := c.do("POST", url, "application/binary", buf)
+	r, err := c.do("POST", url, "application/binary", buf, true)
 	if err != nil {
 		return err
 	}
@@ -337,7 +337,7 @@ func (c *Client) UpdateExportStatus(status *ExportStatus) error {
 		return err
 	}
 
-	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body))
+	r, err := c.do("PUT", url, "application/json", bytes.NewBuffer(body), false)
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func (c *Client) UpdateExportStatus(status *ExportStatus) error {
 }
 
 func (c *Client) SendDNS(url string, buf *bytes.Buffer) error {
-	r, err := c.do("POST", url, "application/chfdns", buf)
+	r, err := c.do("POST", url, "application/chfdns", buf, false)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (c *Client) SendDNS(url string, buf *bytes.Buffer) error {
 	return nil
 }
 
-func (c *Client) do(method, url, ctype string, body io.Reader) (*http.Response, error) {
+func (c *Client) do(method, url, ctype string, body io.Reader, isGz bool) (*http.Response, error) {
 	r, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -376,6 +376,9 @@ func (c *Client) do(method, url, ctype string, body io.Reader) (*http.Response, 
 	r.Header.Set("X-CH-Auth-Email", c.Email)
 	r.Header.Set("X-CH-Auth-API-Token", c.Token)
 	r.Header.Set("Content-Type", ctype)
+	if isGz {
+		r.Header.Set("Content-Encoding", "gzip")
+	}
 
 	return c.Client.Do(r)
 }
