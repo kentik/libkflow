@@ -137,3 +137,42 @@ func flowToCHF(flow flow.Flow, t testing.TB) chf.CHF {
 
 	return kflow
 }
+
+func TestCompress(t *testing.T) {
+	sender, server, assert := setup(t)
+
+	expected := []flow.Flow{
+		flow.Flow{
+			DeviceId:  uint32(sender.Device.ID),
+			SrcAs:     uint32(1),
+			DstAs:     rand.Uint32(),
+			SampleAdj: true,
+		},
+		flow.Flow{
+			DeviceId:  uint32(sender.Device.ID),
+			SrcAs:     uint32(2),
+			DstAs:     rand.Uint32(),
+			SampleAdj: true,
+		},
+		flow.Flow{
+			DeviceId:  uint32(sender.Device.ID),
+			SrcAs:     uint32(3),
+			DstAs:     rand.Uint32(),
+			SampleAdj: true,
+		},
+	}
+
+	// Send them all at once
+	for _, e := range expected {
+		sender.Send(&e)
+	}
+
+	// Itterate through, looking at each one recieved.
+	for i, e := range expected {
+		msgs, err := receive(server)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(flowToCHF(e, t).String(), msgs.At(0).String(), "%d", i)
+	}
+}

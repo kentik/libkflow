@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -216,14 +217,25 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 		panic(http.StatusBadRequest)
 	}
 
+	// Decode body in gzip format if the request header is set this way.
+	body := r.Body
+	if r.Header.Get("Content-Encoding") == "gzip" {
+		z, err := gzip.NewReader(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		body = z
+	}
+	defer body.Close()
+
 	cid := [80]byte{}
-	n, err := r.Body.Read(cid[:])
+	n, err := body.Read(cid[:])
 	if err != nil || n != len(cid) {
 		panic(http.StatusBadRequest)
 	}
 
-	msg, err := capnp.NewPackedDecoder(r.Body).Decode()
-	defer r.Body.Close()
+	msg, err := capnp.NewPackedDecoder(body).Decode()
 	if err != nil {
 		panic(http.StatusBadRequest)
 	}
