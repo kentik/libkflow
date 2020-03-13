@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 	"unsafe"
 
 	"github.com/kentik/libkflow/api"
@@ -180,6 +181,10 @@ func TestInitStatusServer(t *testing.T) {
 	assert.Equal(0, n)
 
 	r, err := http.Get("http://localhost:62000/v1/status")
+	for n := 0; n < 10 && err != nil; n++ {
+		time.Sleep(100*time.Millisecond)
+		r, err = http.Get("http://localhost:62000/v1/status")
+	}
 	assert.NoError(err)
 	assert.Equal(200, r.StatusCode)
 }

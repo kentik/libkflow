@@ -1,0 +1,21 @@
+name: run tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.14', '1.13']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+      - name: test
+        run: |
+          GOPRIVATE=github.com/kentik
+          go test -v -mod=vendor github.com/kentik/libkflow/...
