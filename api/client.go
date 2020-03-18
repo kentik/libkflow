@@ -15,9 +15,10 @@ import (
 
 type Client struct {
 	ClientConfig
-	deviceURL string
-	updateURL string
-	statusURL string
+	deviceURL    string
+	updateURL    string
+	statusURL    string
+	allDeviceURL string
 	*http.Client
 }
 
@@ -71,6 +72,7 @@ func NewClient(config ClientConfig) *Client {
 		deviceURL:    config.API.String() + "/device/%v",
 		updateURL:    config.API.String() + "/company/%v/device/%v/tags/snmp",
 		statusURL:    config.API.String() + "/cloudExport/status/%v",
+		allDeviceURL: config.API.String() + "/devices",
 		Client:       client,
 	}
 }
@@ -85,6 +87,10 @@ func (c *Client) GetDeviceByName(name string) (*Device, error) {
 
 func (c *Client) GetDeviceByIP(ip net.IP) (*Device, error) {
 	return c.getdevice(fmt.Sprintf(c.deviceURL, ip))
+}
+
+func (c *Client) GetAllDevices() ([]*Device, error) {
+	return c.getdevices(c.allDeviceURL)
 }
 
 func (c *Client) GetDeviceByIF(name string) (*Device, error) {
@@ -127,6 +133,25 @@ func (c *Client) getdevice(url string) (*Device, error) {
 	}
 
 	return dw.Device, nil
+}
+
+func (c *Client) getdevices(url string) ([]*Device, error) {
+	r, err := c.do("GET", url, "application/json", nil, false)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	if r.StatusCode != 200 {
+		return nil, c.error(r)
+	}
+
+	dw := &AllDeviceWrapper{}
+	if err := json.NewDecoder(r.Body).Decode(dw); err != nil {
+		return nil, err
+	}
+
+	return dw.Devices, nil
 }
 
 func (c *Client) CreateDeviceAndSite(siteDevCreate *SiteAndDeviceCreate) (*Device, error) {

@@ -105,6 +105,7 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
 	s.mux.HandleFunc(TSDB, s.wrap(s.tsdb))
 	s.mux.HandleFunc(DNS, s.wrap(s.dns))
+	s.mux.HandleFunc(API+"/devices", s.wrap(s.devices))
 
 	c := cron.New()
 	c.AddFunc("* * * * * *", func() {
@@ -147,6 +148,17 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(&api.DeviceWrapper{
 		Device: s.Device,
+	})
+
+	if err != nil {
+		panic(http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) devices(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(&api.AllDeviceWrapper{
+		Devices: []*api.Device{s.Device},
 	})
 
 	if err != nil {

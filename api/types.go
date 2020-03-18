@@ -65,6 +65,10 @@ type DeviceWrapper struct {
 	Device *Device `json:"device"`
 }
 
+type AllDeviceWrapper struct {
+	Devices []*Device `json:"devices"`
+}
+
 type Interface struct {
 	ID      uint64 `json:"id,string"`
 	Index   uint64 `json:"snmp_id,string"`

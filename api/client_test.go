@@ -114,3 +114,16 @@ func TestCreateDevice(t *testing.T) {
 	assert.EqualValues(create.PlanID, int(device.Plan.ID))
 	assert.EqualValues(create.CdnAttr, device.CdnAttr)
 }
+
+func TestGetAllDevices(t *testing.T) {
+	client, _, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+
+	devices, err := client.GetAllDevices()
+
+	assert.NoError(err)
+	assert.EqualValues(device, devices[0])
+}
