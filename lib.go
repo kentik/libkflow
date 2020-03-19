@@ -90,6 +90,11 @@ func NewSenderWithNewSiteAndDevice(siteAndDevice *api.SiteAndDeviceCreate, error
 	return cfg.start(client, d, errors)
 }
 
+func NewSenderFromDevice(d *api.Device, errors chan<- error, cfg *Config) (*Sender, error) {
+	client := cfg.client()
+	return cfg.start(client, d, errors)
+}
+
 func lookupdev(dev *api.Device, err error) (*api.Device, error) {
 	if err != nil {
 		switch {

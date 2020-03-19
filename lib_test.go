@@ -49,6 +49,19 @@ func TestNewSenderWithDeviceName(t *testing.T) {
 	assert.Nil(err)
 }
 
+func TestNewSenderFromDevice(t *testing.T) {
+	dev, assert := setupLibTest(t)
+
+	errors := make(chan error, 100)
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
+
+	s, err := libkflow.NewSenderFromDevice(dev, errors, config)
+
+	assert.NotNil(s)
+	assert.Nil(err)
+}
+
 func TestMetricsConfig(t *testing.T) {
 	dev, assert := setupLibTest(t)
 
