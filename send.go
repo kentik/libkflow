@@ -68,6 +68,13 @@ func (s *Sender) GetClient() *api.Client {
 	}
 }
 
+func (s *Sender) GetDevice() *api.Device {
+	if s != nil {
+		return s.Device
+	}
+	return nil
+}
+
 func (s *Sender) StartDNS(url *url.URL, interval time.Duration) {
 	s.dns = make(chan []byte, 1e5)
 	go s.dispatchDNS(url.String(), interval)
