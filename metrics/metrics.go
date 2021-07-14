@@ -17,6 +17,7 @@ const (
 )
 
 type Metrics struct {
+	reg            metrics.Registry
 	TotalFlowsIn   metrics.Meter
 	TotalFlowsOut  metrics.Meter
 	OrigSampleRate metrics.Histogram
@@ -43,12 +44,17 @@ func New(clientid, program, version string) *Metrics {
 		"level": "primary",
 	}
 
+	// libkflow creates its own go-metrics Registry, which hold only its
+	// own metrics (or ones that its clients create with
+	reg := metrics.NewRegistry()
+
 	return &Metrics{
-		TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), nil),
-		TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), nil),
-		OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), nil, sample()),
-		NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), nil, sample()),
-		RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), nil),
+		reg:            reg,
+		TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), reg),
+		TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), reg),
+		OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), reg, sample()),
+		NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), reg, sample()),
+		RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), reg),
 		Extra:          extra,
 	}
 }
@@ -61,7 +67,7 @@ func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy 
 
 	go cmetrics.OpenHTTPTSDBWithConfig(cmetrics.OpenHTTPTSDBConfig{
 		Addr:               url,
-		Registry:           metrics.DefaultRegistry,
+		Registry:           m.reg,
 		FlushInterval:      interval,
 		DurationUnit:       time.Millisecond,
 		Prefix:             "chf",
