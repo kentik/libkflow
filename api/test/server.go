@@ -100,6 +100,7 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 
 	s.mux.HandleFunc(API+"/device/{did}", s.wrap(s.device))
 	s.mux.HandleFunc(API+"/device/", s.wrap(s.create))
+	s.mux.HandleFunc(API+"/deviceAndSite", s.wrap(s.createDeviceAndSite))
 	s.mux.HandleFunc(API+"/device/{did}/interfaces", s.wrap(s.interfaces))
 	s.mux.HandleFunc(API+"/company/{cid}/device/{did}/tags/snmp", s.wrap(s.update))
 	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
@@ -174,26 +175,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	create := wrapper["device"]
-
-	plan := api.Plan{
-		ID: uint64(create.PlanID),
-	}
-
-	id, _ := rand.Int(rand.Reader, big.NewInt(65535))
-	device := &api.Device{
-		ID:          int(id.Int64()),
-		Name:        create.Name,
-		Type:        create.Type,
-		Description: create.Description,
-		IP:          create.IPs[0],
-		SampleRate:  create.SampleRate,
-		BgpType:     create.BgpType,
-		Plan:        plan,
-		CdnAttr:     create.CdnAttr,
-		MaxFlowRate: s.Device.MaxFlowRate,
-		CompanyID:   s.Device.CompanyID,
-		Customs:     s.Device.Customs,
-	}
+	device := s.createDevice(create)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -206,6 +188,57 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.Device = device
+}
+
+func (s *Server) createDeviceAndSite(w http.ResponseWriter, r *http.Request) {
+	wrapper := &api.SiteAndDeviceCreate{}
+
+	if err := json.NewDecoder(r.Body).Decode(&wrapper); err != nil {
+		panic(http.StatusInternalServerError)
+	}
+
+	device := s.createDevice(wrapper.Device)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err := json.NewEncoder(w).Encode(&api.DeviceWrapper{
+		Device: device,
+	})
+
+	if err != nil {
+		panic(http.StatusInternalServerError)
+	}
+
+	s.Device = device
+}
+
+func (s *Server) createDevice(create *api.DeviceCreate) *api.Device {
+	plan := api.Plan{
+		ID: uint64(create.PlanID),
+	}
+
+	id, _ := rand.Int(rand.Reader, big.NewInt(65535))
+
+	var deviceIP net.IP
+	if len(create.IPs) > 0 {
+		deviceIP = create.IPs[0]
+	}
+
+	device := &api.Device{
+		ID:          int(id.Int64()),
+		Name:        create.Name,
+		Type:        create.Type,
+		Description: create.Description,
+		IP:          deviceIP,
+		SampleRate:  create.SampleRate,
+		BgpType:     create.BgpType,
+		Plan:        plan,
+		CdnAttr:     create.CdnAttr,
+		MaxFlowRate: s.Device.MaxFlowRate,
+		CompanyID:   s.Device.CompanyID,
+		Customs:     s.Device.Customs,
+	}
+	return device
 }
 
 func (s *Server) interfaces(w http.ResponseWriter, r *http.Request) {

@@ -115,6 +115,104 @@ func TestCreateDevice(t *testing.T) {
 	assert.EqualValues(create.CdnAttr, device.CdnAttr)
 }
 
+func TestCreateDeviceFailsWithoutIPFlag(t *testing.T) {
+	client, _, _, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+
+	create := &api.DeviceCreate{
+		Name:        test.RandStr(8),
+		Type:        test.RandStr(8),
+		Description: test.RandStr(8),
+		SampleRate:  int(rand.Uint32()),
+		BgpType:     test.RandStr(4),
+		PlanID:      int(rand.Uint32()),
+		IPs:         []net.IP{},
+		CdnAttr:     test.RandStr(1),
+	}
+
+	_, err = client.CreateDevice(create)
+	assert.Error(err)
+}
+
+func TestCreateDeviceWithoutIP(t *testing.T) {
+	client, _, _, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+
+	create := &api.DeviceCreate{
+		Name:        test.RandStr(8),
+		Type:        test.RandStr(8),
+		Description: test.RandStr(8),
+		SampleRate:  int(rand.Uint32()),
+		BgpType:     test.RandStr(4),
+		PlanID:      int(rand.Uint32()),
+		IPs:         []net.IP{},
+		AllowNoIP:   true,
+		CdnAttr:     test.RandStr(1),
+	}
+
+	device, err := client.CreateDevice(create)
+	assert.NoError(err)
+
+	assert.EqualValues(create.Name, device.Name)
+	assert.EqualValues(create.Type, device.Type)
+	assert.EqualValues(create.Description, device.Description)
+	assert.EqualValues(net.IP(nil), device.IP)
+	assert.EqualValues(create.SampleRate, device.SampleRate)
+	assert.EqualValues(create.BgpType, device.BgpType)
+	assert.EqualValues(create.PlanID, int(device.Plan.ID))
+	assert.EqualValues(create.CdnAttr, device.CdnAttr)
+}
+
+func TestCreateDeviceAndSiteWithoutIP(t *testing.T) {
+	client, _, _, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert := assert.New(t)
+
+	create := &api.DeviceCreate{
+		Name:        test.RandStr(8),
+		Type:        test.RandStr(8),
+		Description: test.RandStr(8),
+		SampleRate:  int(rand.Uint32()),
+		BgpType:     test.RandStr(4),
+		PlanID:      int(rand.Uint32()),
+		IPs:         []net.IP{},
+		AllowNoIP:   true,
+		CdnAttr:     test.RandStr(1),
+	}
+
+	siteCreate := &api.SiteCreate{
+		Title:   "Hawaii Offsite",
+		City:    "Honolulu",
+		Region:  "Pacific",
+		Country: "USA",
+	}
+
+	siteAndDeviceCreate := &api.SiteAndDeviceCreate{
+		Site:   siteCreate,
+		Device: create,
+	}
+
+	device, err := client.CreateDeviceAndSite(siteAndDeviceCreate)
+	assert.NoError(err)
+
+	assert.EqualValues(siteAndDeviceCreate.Device.Name, device.Name)
+	assert.EqualValues(siteAndDeviceCreate.Device.Type, device.Type)
+	assert.EqualValues(siteAndDeviceCreate.Device.Description, device.Description)
+	assert.EqualValues(net.IP(nil), device.IP)
+	assert.EqualValues(siteAndDeviceCreate.Device.SampleRate, device.SampleRate)
+	assert.EqualValues(siteAndDeviceCreate.Device.BgpType, device.BgpType)
+	assert.EqualValues(siteAndDeviceCreate.Device.PlanID, int(device.Plan.ID))
+	assert.EqualValues(siteAndDeviceCreate.Device.CdnAttr, device.CdnAttr)
+}
+
 func TestGetAllDevices(t *testing.T) {
 	client, _, device, err := test.NewClientServer()
 	if err != nil {
