@@ -156,7 +156,7 @@ func (c *Client) getdevices(url string) ([]*Device, error) {
 
 func (c *Client) CreateDeviceAndSite(siteDevCreate *SiteAndDeviceCreate) (*Device, error) {
 
-	if len(siteDevCreate.Device.IPs) == 0 {
+	if !siteDevCreate.Device.AllowNoIP && len(siteDevCreate.Device.IPs) == 0 {
 		return nil, fmt.Errorf("Missing IP for device")
 	}
 
@@ -194,7 +194,7 @@ func (c *Client) CreateDeviceAndSite(siteDevCreate *SiteAndDeviceCreate) (*Devic
 func (c *Client) CreateDevice(create *DeviceCreate) (*Device, error) {
 	url := fmt.Sprintf(c.deviceURL, "")
 
-	if len(create.IPs) == 0 {
+	if !create.AllowNoIP && len(create.IPs) == 0 {
 		return nil, fmt.Errorf("Missing IP for device")
 	}
 

@@ -54,6 +54,7 @@ type DeviceCreate struct {
 	PlanID      int      `json:"plan_id,omitempty"`
 	SiteID      int      `json:"site_id,omitempty"`
 	IPs         []net.IP `json:"sending_ips"`
+	AllowNoIP   bool     `json:"-"`
 	CdnAttr     string   `json:"cdn_attr"`
 	ExportId    int      `json:"cloud_export_id,omitempty"`
 	Subtype     string   `json:"device_subtype"`
