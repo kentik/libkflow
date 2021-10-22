@@ -70,6 +70,14 @@ type AllDeviceWrapper struct {
 	Devices []*Device `json:"devices"`
 }
 
+type DevicesFilter struct {
+	FilterCloud bool     `schema:"filterCloud"`
+	CloudOnly   bool     `schema:"cloudOnly"`
+	Subtypes    []string `schema:"subtypes"`
+	AugmentWith []string `schema:"augmentWith"`
+	Columns     []string `schema:"columns"`
+}
+
 type Interface struct {
 	ID      uint64 `json:"id,string"`
 	Index   uint64 `json:"snmp_id,string"`
