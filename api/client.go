@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -91,6 +92,45 @@ func (c *Client) GetDeviceByIP(ip net.IP) (*Device, error) {
 
 func (c *Client) GetAllDevices() ([]*Device, error) {
 	return c.getdevices(c.allDeviceURL)
+}
+
+func (c *Client) GetDevices(filter *DevicesFilter) ([]*Device, error) {
+	type queryParams struct {
+		key   string
+		value string
+	}
+	qp := make([]queryParams, 0)
+	if filter.FilterCloud {
+		qp = append(qp, queryParams{"filterCloud", "true"})
+	}
+	if filter.CloudOnly {
+		qp = append(qp, queryParams{"cloudOnly", "true"})
+	}
+	for _, v := range filter.Subtypes {
+		qp = append(qp, queryParams{"subtypes[]", v})
+	}
+	for _, v := range filter.AugmentWith {
+		qp = append(qp, queryParams{"augmentWith[]", v})
+	}
+	for _, v := range filter.Columns {
+		qp = append(qp, queryParams{"columns[]", v})
+	}
+
+	if len(qp) > 0 {
+		var buf strings.Builder
+		for _, p := range qp {
+			if buf.Len() > 0 {
+				buf.WriteByte('&')
+			}
+			buf.WriteString(p.key) // don't escape to allow for array syntax (normally escaped)
+			buf.WriteByte('=')
+			buf.WriteString(url.QueryEscape(p.value))
+		}
+
+		return c.getdevices(c.allDeviceURL + "?" + buf.String())
+	} else {
+		return c.getdevices(c.allDeviceURL)
+	}
 }
 
 func (c *Client) GetDeviceByIF(name string) (*Device, error) {
