@@ -182,7 +182,7 @@ func TestInitStatusServer(t *testing.T) {
 
 	r, err := http.Get("http://localhost:62000/v1/status")
 	for n := 0; n < 10 && err != nil; n++ {
-		time.Sleep(100*time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		r, err = http.Get("http://localhost:62000/v1/status")
 	}
 	assert.NoError(err)

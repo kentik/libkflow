@@ -1,32 +1,31 @@
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/gorilla/context v1.1.1
-github.com/gorilla/context
-# github.com/gorilla/mux v1.6.2
+# github.com/gorilla/mux v1.8.0
 github.com/gorilla/mux
 # github.com/jessevdk/go-flags v1.4.0
 github.com/jessevdk/go-flags
-# github.com/kentik/common v0.0.0-20190403165712-a185947a74e6
-github.com/kentik/common/cmetrics
-# github.com/kentik/go-metrics v0.0.0-20150701210649-d05a8439b0a0
-github.com/kentik/go-metrics
-# github.com/philhofer/fwd v1.0.0
+# github.com/kentik/kit/go/legacy v0.0.1
+github.com/kentik/kit/go/legacy/common/cmetrics
+github.com/kentik/kit/go/legacy/go-metrics
+# github.com/philhofer/fwd v1.1.1
 github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
 github.com/robfig/cron
-# github.com/stretchr/testify v1.2.2
+# github.com/stretchr/testify v1.8.0
 github.com/stretchr/testify/assert
-# github.com/tinylib/msgp v1.1.0
+# github.com/tinylib/msgp v1.1.6
 github.com/tinylib/msgp/msgp
-# golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01
+# golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
 golang.org/x/net/context
-# zombiezen.com/go/capnproto2 v0.0.0-20181004142158-659aba4018b6
+# gopkg.in/yaml.v3 v3.0.1
+gopkg.in/yaml.v3
+# zombiezen.com/go/capnproto2 v2.18.2+incompatible
 zombiezen.com/go/capnproto2
 zombiezen.com/go/capnproto2/encoding/text
-zombiezen.com/go/capnproto2/schemas
-zombiezen.com/go/capnproto2/internal/packed
-zombiezen.com/go/capnproto2/internal/strquote
 zombiezen.com/go/capnproto2/internal/nodemap
+zombiezen.com/go/capnproto2/internal/packed
 zombiezen.com/go/capnproto2/internal/schema
+zombiezen.com/go/capnproto2/internal/strquote
+zombiezen.com/go/capnproto2/schemas
