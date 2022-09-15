@@ -7,7 +7,7 @@ import (
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
-	"zombiezen.com/go/capnproto2"
+	capnp "zombiezen.com/go/capnproto2"
 )
 
 type Agg struct {

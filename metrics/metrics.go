@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kentik/common/cmetrics"
-	"github.com/kentik/go-metrics"
+	"github.com/kentik/kit/go/legacy/common/cmetrics"
+	"github.com/kentik/kit/go/legacy/go-metrics"
 )
 
 const (

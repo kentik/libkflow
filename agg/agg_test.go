@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"zombiezen.com/go/capnproto2"
+	capnp "zombiezen.com/go/capnproto2"
 
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
