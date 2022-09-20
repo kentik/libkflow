@@ -4,7 +4,7 @@ github.com/davecgh/go-spew/spew
 github.com/gorilla/mux
 # github.com/jessevdk/go-flags v1.4.0
 github.com/jessevdk/go-flags
-# github.com/kentik/kit/go/legacy v0.0.1
+# github.com/kentik/kit/go/legacy v0.0.2
 github.com/kentik/kit/go/legacy/common/cmetrics
 github.com/kentik/kit/go/legacy/go-metrics
 # github.com/philhofer/fwd v1.1.1
