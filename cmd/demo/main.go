@@ -15,7 +15,7 @@ func main() {
 		token    = "token"
 		deviceID = 1
 		host     = net.ParseIP("127.0.0.1")
-		port     = 8080
+		port     = 8999
 		program  = "demo"
 		version  = "0.0.1"
 	)
@@ -24,6 +24,7 @@ func main() {
 
 	config := libkflow.NewConfig(email, token, program, version)
 	config.SetServer(host, port)
+	config.SetRetries(4)
 	config.SetVerbose(1)
 
 	s, err := libkflow.NewSenderWithDeviceID(deviceID, errors, config)
@@ -36,5 +37,5 @@ func main() {
 		Ipv4DstAddr: uint32(1),
 	})
 
-	s.Stop(10 * time.Second)
+	s.Stop(90 * time.Second)
 }

@@ -24,6 +24,7 @@ type Config struct {
 	metrics         *url.URL
 	sample          int
 	timeout         time.Duration
+	retries         int
 	program         string
 	version         string
 	metricsInterval time.Duration
@@ -70,6 +71,11 @@ func (c *Config) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
 
+// SetRetries sets the number of times to try HTTP requests.
+func (c *Config) SetRetries(retries int) {
+	c.retries = retries
+}
+
 // Set just the flow server
 func (c *Config) SetFlow(server string) {
 	c.flow = parseURL(server + "/chf")
@@ -113,6 +119,7 @@ func (c *Config) client() *api.Client {
 		Email:   c.email,
 		Token:   c.token,
 		Timeout: c.timeout,
+		Retries: c.retries,
 		API:     c.api,
 		Proxy:   c.proxy,
 	})
@@ -164,6 +171,7 @@ func defaultConfig(email, token, program, version string) *Config {
 		flow:    parseURL("https://flow.kentik.com/chf"),
 		metrics: parseURL("https://flow.kentik.com/tsdb"),
 		timeout: 10 * time.Second,
+		retries: 0,
 		program: program,
 		version: version,
 	}

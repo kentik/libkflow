@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
 type Client struct {
@@ -27,6 +29,7 @@ type ClientConfig struct {
 	Email   string
 	Token   string
 	Timeout time.Duration
+	Retries int
 	API     *url.URL
 	Proxy   *url.URL
 }
@@ -50,7 +53,6 @@ func NewClient(config ClientConfig) *Client {
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-			DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
@@ -59,10 +61,12 @@ func NewClient(config ClientConfig) *Client {
 		DisableCompression:    false,
 	}
 
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   config.Timeout,
-	}
+	retryClient := retryablehttp.NewClient()
+	retryClient.HTTPClient.Transport = transport
+	retryClient.RetryWaitMin = config.Timeout
+	retryClient.RetryMax = config.Retries
+
+	client := retryClient.StandardClient() // *http.Client
 
 	if config.Proxy != nil {
 		transport.Proxy = http.ProxyURL(config.Proxy)
