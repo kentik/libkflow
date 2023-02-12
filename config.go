@@ -2,8 +2,10 @@ package libkflow
 
 import (
 	"fmt"
+	go_log "log"
 	"net"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -25,6 +27,7 @@ type Config struct {
 	sample          int
 	timeout         time.Duration
 	retries         int
+	logger          interface{}
 	program         string
 	version         string
 	metricsInterval time.Duration
@@ -35,6 +38,20 @@ type Capture struct {
 	Device  string
 	Snaplen int32
 	Promisc bool
+}
+
+// Logger interface allows to use other loggers than
+// standard log.Logger.
+type Logger interface {
+	Printf(string, ...interface{})
+}
+
+// LeveledLogger interface implements the basic methods that a logger library needs
+type LeveledLogger interface {
+	Error(string, ...interface{})
+	Info(string, ...interface{})
+	Debug(string, ...interface{})
+	Warn(string, ...interface{})
 }
 
 // NewConfig returns a new Config given an API access email and token,
@@ -74,6 +91,16 @@ func (c *Config) SetTimeout(timeout time.Duration) {
 // SetRetries sets the number of times to try HTTP requests.
 func (c *Config) SetRetries(retries int) {
 	c.retries = retries
+}
+
+// SetLogger sets the logger to use for the underlying HTTP requests.
+func (c *Config) SetLogger(logger Logger) {
+	c.logger = logger
+}
+
+// SetLeveledLogger sets the level based logger to use for the underlying HTTP requests.
+func (c *Config) SetLeveledLogger(logger LeveledLogger) {
+	c.logger = logger
 }
 
 // Set just the flow server
@@ -122,6 +149,8 @@ func (c *Config) client() *api.Client {
 		Retries: c.retries,
 		API:     c.api,
 		Proxy:   c.proxy,
+
+		Logger: c.logger,
 	})
 }
 
@@ -172,6 +201,7 @@ func defaultConfig(email, token, program, version string) *Config {
 		metrics: parseURL("https://flow.kentik.com/tsdb"),
 		timeout: 10 * time.Second,
 		retries: 0,
+		logger:  go_log.New(os.Stderr, "", go_log.LstdFlags), // default behavior of underlying logger
 		program: program,
 		version: version,
 	}
