@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 type Client struct {
@@ -32,6 +32,8 @@ type ClientConfig struct {
 	Retries int
 	API     *url.URL
 	Proxy   *url.URL
+
+	Logger interface{}
 }
 
 type ExportStatus struct {
@@ -65,6 +67,7 @@ func NewClient(config ClientConfig) *Client {
 	retryClient.HTTPClient.Transport = transport
 	retryClient.RetryWaitMin = config.Timeout
 	retryClient.RetryMax = config.Retries
+	retryClient.Logger = config.Logger
 
 	client := retryClient.StandardClient() // *http.Client
 
