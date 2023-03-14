@@ -90,7 +90,7 @@ func BenchmarkSenderSend(b *testing.B) {
 }
 
 func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
-	metrics := metrics.New("clientid", "send_test", "1.0.0")
+	metrics := metrics.New(100, 200, "send_test", "1.0.0")
 	agg, err := agg.NewAgg(10*time.Millisecond, 100, metrics)
 	if err != nil {
 		t.Fatal(err)
