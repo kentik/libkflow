@@ -130,7 +130,7 @@ func (c *Config) OverrideURLs(api, flow, metrics *url.URL) {
 }
 
 func (c *Config) NewMetrics(dev *api.Device) *metrics.Metrics {
-	return metrics.New(dev.ClientID(), c.program, c.version)
+	return metrics.New(dev.CompanyID, dev.ID, c.program, c.version)
 }
 
 func (c *Config) GetClient() *api.Client {

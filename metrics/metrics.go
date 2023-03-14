@@ -3,7 +3,7 @@ package metrics
 import (
 	"fmt"
 	"net/url"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/kentik/kit/go/legacy/common/cmetrics"
@@ -26,11 +26,9 @@ type Metrics struct {
 	Extra          map[string]string
 }
 
-func New(clientid, program, version string) *Metrics {
-	clientid = strings.Replace(clientid, ":", ".", -1)
-
+func New(companyID int, deviceID int, program, version string) *Metrics {
 	name := func(key string) string {
-		return fmt.Sprintf("client_%s.%s", key, clientid)
+		return fmt.Sprintf("client_%s", key)
 	}
 
 	sample := func() metrics.Sample {
@@ -42,6 +40,8 @@ func New(clientid, program, version string) *Metrics {
 		"ft":    program,
 		"dt":    "libkflow",
 		"level": "primary",
+		"cid":   strconv.Itoa(companyID),
+		"did":   strconv.Itoa(deviceID),
 	}
 
 	// libkflow creates its own go-metrics Registry, which hold only its
