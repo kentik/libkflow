@@ -134,14 +134,14 @@ func (s *Sender) dispatch() {
 
 		err := capnp.NewPackedEncoder(z).Encode(msg)
 		if err != nil {
-			s.error(err)
+			s.Errors <- err
 			continue
 		}
 
 		z.Close()
 		err = s.client.SendFlow(url, buf)
 		if err != nil {
-			s.error(err)
+			s.Errors <- err
 			continue
 		}
 	}
@@ -166,7 +166,7 @@ func (s *Sender) dispatchDNS(url string, interval time.Duration) {
 		if buf.Len() > 1e6 || flush && buf.Len() > 0 {
 			err := s.client.SendDNS(url, &buf)
 			if err != nil {
-				s.error(err)
+				s.Errors <- err
 				continue
 			}
 
@@ -179,7 +179,7 @@ func (s *Sender) monitor() {
 	for {
 		select {
 		case err := <-s.agg.Errors():
-			s.error(err)
+			s.Errors <- err
 		case <-s.agg.Done():
 			s.workers.Wait()
 			s.ticker.Stop()
@@ -215,12 +215,5 @@ func (s *Sender) update() {
 			log.Debugf("device sample rate changed, aborting")
 			os.Exit(1)
 		}
-	}
-}
-
-func (s *Sender) error(err error) {
-	select {
-	case s.Errors <- err:
-	default:
 	}
 }
