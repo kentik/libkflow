@@ -82,6 +82,7 @@ type Flow struct {
 	Ipv6SrcRoutePrefix []byte
 	Ipv6DstRoutePrefix []byte
 	IsMetric           bool
+	AppProtocol        uint32
 	Customs            []Custom
 }
 
@@ -186,6 +187,7 @@ func New(cflow *Ckflow) Flow {
 		Ipv6SrcRoutePrefix: bts(cflow.ipv6SrcRoutePrefix, 16),
 		Ipv6DstRoutePrefix: bts(cflow.ipv6DstRoutePrefix, 16),
 		IsMetric:           cflow.isMetric == 1,
+		AppProtocol:        uint32(cflow.appProtocol),
 		Customs:            newCustoms(cflow),
 	}
 }
@@ -256,6 +258,7 @@ func (f *Flow) FillCHF(kflow chf.CHF, list chf.Custom_List) {
 	kflow.SetIpv6SrcRoutePrefix(f.Ipv6SrcRoutePrefix)
 	kflow.SetIpv6DstRoutePrefix(f.Ipv6DstRoutePrefix)
 	kflow.SetIsMetric(f.IsMetric)
+	kflow.SetAppProtocol(f.AppProtocol)
 
 	for i, c := range f.Customs {
 		kc := list.At(i)

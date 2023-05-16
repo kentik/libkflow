@@ -81,6 +81,7 @@ func TestFlowRoundtrip(t *testing.T) {
 		ipv6SrcAddr:       (*_Ctype_uint8_t)(&ipv6dstaddr[0]),
 		srcEthMac:         _Ctype_uint64_t(rand.Int63()),
 		dstEthMac:         _Ctype_uint64_t(rand.Int63()),
+		appProtocol:       _Ctype_uint32_t(rand.Int31()),
 	}
 
 	msgs, err := roundtrip(f)
@@ -155,6 +156,7 @@ func TestFlowRoundtrip(t *testing.T) {
 	assertEqualValues(t, f.ipv6SrcAddr, noerr(kflow.Ipv6SrcAddr()))
 	assert.EqualValues(f.srcEthMac, kflow.SrcEthMac())
 	assert.EqualValues(f.dstEthMac, kflow.DstEthMac())
+	assert.EqualValues(f.appProtocol, kflow.AppProtocol())
 
 	runtime.KeepAlive(ipv6srcaddr)
 	runtime.KeepAlive(ipv6dstaddr)
