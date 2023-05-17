@@ -193,6 +193,7 @@ typedef struct {
     uint8_t *ipv6SrcRoutePrefix; // src IPv6 route prefix
     uint8_t *ipv6DstRoutePrefix; // dst IPv6 route prefix
     uint8_t isMetric;
+    uint32_t appProtocol;
 
     kflowCustom *customs;        // custom field array
     uint32_t numCustoms;         // custom field count
