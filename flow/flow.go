@@ -45,6 +45,7 @@ type Flow struct {
 	OutBytes           uint64
 	OutPkts            uint64
 	TcpRetransmit      uint32
+	AppProtocol        uint32
 	SrcFlowTags        string
 	DstFlowTags        string
 	SampleRate         uint32
@@ -82,7 +83,6 @@ type Flow struct {
 	Ipv6SrcRoutePrefix []byte
 	Ipv6DstRoutePrefix []byte
 	IsMetric           bool
-	AppProtocol        uint32
 	Customs            []Custom
 }
 
@@ -150,6 +150,7 @@ func New(cflow *Ckflow) Flow {
 		OutBytes:           uint64(cflow.outBytes),
 		OutPkts:            uint64(cflow.outPkts),
 		TcpRetransmit:      uint32(cflow.tcpRetransmit),
+		AppProtocol:        uint32(cflow.appProtocol),
 		SrcFlowTags:        C.GoString(cflow.srcFlowTags),
 		DstFlowTags:        C.GoString(cflow.dstFlowTags),
 		SampleRate:         uint32(cflow.sampleRate),
@@ -187,7 +188,6 @@ func New(cflow *Ckflow) Flow {
 		Ipv6SrcRoutePrefix: bts(cflow.ipv6SrcRoutePrefix, 16),
 		Ipv6DstRoutePrefix: bts(cflow.ipv6DstRoutePrefix, 16),
 		IsMetric:           cflow.isMetric == 1,
-		AppProtocol:        uint32(cflow.appProtocol),
 		Customs:            newCustoms(cflow),
 	}
 }
@@ -221,6 +221,7 @@ func (f *Flow) FillCHF(kflow chf.CHF, list chf.Custom_List) {
 	kflow.SetOutBytes(f.OutBytes)
 	kflow.SetOutPkts(f.OutPkts)
 	kflow.SetTcpRetransmit(f.TcpRetransmit)
+	kflow.SetAppProtocol(f.AppProtocol)
 	// kflow.SetSrcFlowTags(f.SrcFlowTags)
 	// kflow.SetDstFlowTags(f.DstFlowTags)
 	kflow.SetSampleRate(f.SampleRate)
@@ -258,7 +259,6 @@ func (f *Flow) FillCHF(kflow chf.CHF, list chf.Custom_List) {
 	kflow.SetIpv6SrcRoutePrefix(f.Ipv6SrcRoutePrefix)
 	kflow.SetIpv6DstRoutePrefix(f.Ipv6DstRoutePrefix)
 	kflow.SetIsMetric(f.IsMetric)
-	kflow.SetAppProtocol(f.AppProtocol)
 
 	for i, c := range f.Customs {
 		kc := list.At(i)
