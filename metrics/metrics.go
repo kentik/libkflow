@@ -61,7 +61,7 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 	}
 }
 
-func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy *url.URL) {
+func (m *Metrics) Start(url, email, token string, prefix string, interval time.Duration, proxy *url.URL) {
 	proxyURL := ""
 	if proxy != nil {
 		proxyURL = proxy.String()
@@ -72,7 +72,7 @@ func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy 
 		Registry:           m.reg,
 		FlushInterval:      interval,
 		DurationUnit:       time.Millisecond,
-		Prefix:             "chf",
+		Prefix:             prefix,
 		Debug:              false,
 		Send:               make(chan []byte, MaxHttpRequests),
 		ProxyUrl:           proxyURL,

@@ -17,19 +17,21 @@ import (
 
 // Config describes the libkflow configuration.
 type Config struct {
-	email           string
-	token           string
-	capture         Capture
-	proxy           *url.URL
-	api             *url.URL
-	flow            *url.URL
-	metrics         *url.URL
-	sample          int
-	timeout         time.Duration
-	retries         int
-	logger          interface{}
-	program         string
-	version         string
+	email   string
+	token   string
+	capture Capture
+	proxy   *url.URL
+	api     *url.URL
+	flow    *url.URL
+	metrics *url.URL
+	sample  int
+	timeout time.Duration
+	retries int
+	logger  interface{}
+	program string
+	version string
+
+	metricsPrefix   string
 	metricsInterval time.Duration
 }
 
@@ -137,6 +139,10 @@ func (c *Config) GetClient() *api.Client {
 	return c.client()
 }
 
+func (c *Config) SetMetricsPrefix(prefix string) {
+	c.metricsPrefix = prefix
+}
+
 func (c *Config) SetMetricsInterval(dur time.Duration) {
 	c.metricsInterval = dur
 }
@@ -159,7 +165,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 		c.metricsInterval = 60 * time.Second
 	}
 	metrics := c.NewMetrics(dev)
-	metrics.Start(c.metrics.String(), c.email, c.token, c.metricsInterval, c.proxy)
+	metrics.Start(c.metrics.String(), c.email, c.token, c.metricsPrefix, c.metricsInterval, c.proxy)
 
 	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, metrics)
 	if err != nil {
@@ -192,18 +198,19 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 
 func defaultConfig(email, token, program, version string) *Config {
 	return &Config{
-		email:   email,
-		token:   token,
-		capture: Capture{},
-		proxy:   nil,
-		api:     parseURL("https://api.kentik.com/api/internal"),
-		flow:    parseURL("https://flow.kentik.com/chf"),
-		metrics: parseURL("https://flow.kentik.com/tsdb"),
-		timeout: 10 * time.Second,
-		retries: 0,
-		logger:  go_log.New(os.Stderr, "", go_log.LstdFlags), // default behavior of underlying logger
-		program: program,
-		version: version,
+		email:         email,
+		token:         token,
+		capture:       Capture{},
+		proxy:         nil,
+		api:           parseURL("https://api.kentik.com/api/internal"),
+		flow:          parseURL("https://flow.kentik.com/chf"),
+		metrics:       parseURL("https://flow.kentik.com/tsdb"),
+		timeout:       10 * time.Second,
+		retries:       0,
+		logger:        go_log.New(os.Stderr, "", go_log.LstdFlags), // default behavior of underlying logger
+		program:       program,
+		version:       version,
+		metricsPrefix: "chf",
 	}
 }
 
