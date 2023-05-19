@@ -23,6 +23,7 @@ type Metrics struct {
 	OrigSampleRate metrics.Histogram
 	NewSampleRate  metrics.Histogram
 	RateLimitDrops metrics.Meter
+	BytesSent      metrics.Meter
 	Extra          map[string]string
 }
 
@@ -55,6 +56,7 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 		OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), reg, sample()),
 		NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), reg, sample()),
 		RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), reg),
+		BytesSent:      metrics.GetOrRegisterMeter(name("BytesSent"), reg),
 		Extra:          extra,
 	}
 }
