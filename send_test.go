@@ -34,7 +34,8 @@ func TestSender(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	assert.True(sender.Stop(100 * time.Millisecond))
+	assert.Greater(sender.Metrics.BytesSent.Count(), int64(0))
 	assert.Equal(flowToCHF(expected, t).String(), msgs.At(0).String())
 }
 

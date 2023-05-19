@@ -139,14 +139,15 @@ func (s *Sender) dispatch() {
 		}
 
 		z.Close()
+		l := buf.Len()
 		err = s.client.SendFlow(url, buf)
 		if err != nil {
 			s.error(err)
 			continue
-		} else {
-			if s.Metrics != nil {
-				s.Metrics.BytesSent.Mark(int64(buf.Len()))
-			}
+		}
+
+		if s.Metrics != nil {
+			s.Metrics.BytesSent.Mark(int64(l))
 		}
 	}
 	s.workers.Done()
