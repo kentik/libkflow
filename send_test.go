@@ -105,6 +105,7 @@ func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
 
 	url := server.URL(test.FLOW)
 	sender := newSender(url, 1*time.Second)
+	sender.Metrics = metrics
 	sender.start(agg, client, device, 1)
 
 	return sender, server, assert.New(t)

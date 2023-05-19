@@ -144,7 +144,9 @@ func (s *Sender) dispatch() {
 			s.error(err)
 			continue
 		} else {
-			s.Metrics.BytesSent.Mark(int64(buf.Len()))
+			if s.Metrics != nil {
+				s.Metrics.BytesSent.Mark(int64(buf.Len()))
+			}
 		}
 	}
 	s.workers.Done()
