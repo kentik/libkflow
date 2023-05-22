@@ -34,7 +34,8 @@ func TestSender(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	assert.True(sender.Stop(100 * time.Millisecond))
+	assert.Greater(sender.Metrics.BytesSent.Count(), int64(0))
 	assert.Equal(flowToCHF(expected, t).String(), msgs.At(0).String())
 }
 
@@ -105,6 +106,7 @@ func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
 
 	url := server.URL(test.FLOW)
 	sender := newSender(url, 1*time.Second)
+	sender.Metrics = metrics
 	sender.start(agg, client, device, 1)
 
 	return sender, server, assert.New(t)

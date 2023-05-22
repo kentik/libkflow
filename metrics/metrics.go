@@ -23,6 +23,7 @@ type Metrics struct {
 	OrigSampleRate metrics.Histogram
 	NewSampleRate  metrics.Histogram
 	RateLimitDrops metrics.Meter
+	BytesSent      metrics.Meter
 	Extra          map[string]string
 }
 
@@ -55,11 +56,12 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 		OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), reg, sample()),
 		NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), reg, sample()),
 		RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), reg),
+		BytesSent:      metrics.GetOrRegisterMeter(name("BytesSent"), reg),
 		Extra:          extra,
 	}
 }
 
-func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy *url.URL) {
+func (m *Metrics) Start(url, email, token string, prefix string, interval time.Duration, proxy *url.URL) {
 	proxyURL := ""
 	if proxy != nil {
 		proxyURL = proxy.String()
@@ -70,7 +72,7 @@ func (m *Metrics) Start(url, email, token string, interval time.Duration, proxy 
 		Registry:           m.reg,
 		FlushInterval:      interval,
 		DurationUnit:       time.Millisecond,
-		Prefix:             "chf",
+		Prefix:             prefix,
 		Debug:              false,
 		Send:               make(chan []byte, MaxHttpRequests),
 		ProxyUrl:           proxyURL,

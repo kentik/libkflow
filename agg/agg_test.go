@@ -71,6 +71,7 @@ func setup(t *testing.T, interval time.Duration, fps int) (*testState, *assert.A
 		OrigSampleRate: metrics.NewHistogram(metrics.NewUniformSample(100)),
 		NewSampleRate:  metrics.NewHistogram(metrics.NewUniformSample(100)),
 		RateLimitDrops: metrics.NewMeter(),
+		BytesSent:      metrics.NewMeter(),
 	}
 
 	agg, err := NewAgg(interval, fps, metrics)
