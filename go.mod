@@ -13,3 +13,5 @@ require (
 )
 
 go 1.13
+
+replace zombiezen.com/go/capnproto2 => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
