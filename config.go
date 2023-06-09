@@ -17,21 +17,21 @@ import (
 
 // Config describes the libkflow configuration.
 type Config struct {
-	logger  interface{}
-	metrics *url.URL
-	flow    *url.URL
-	proxy   *url.URL
-	api     *url.URL
-	program string
 	email   string
 	token   string
+	capture Capture
+	proxy   *url.URL
+	api     *url.URL
+	flow    *url.URL
+	metrics *url.URL
+	sample  int
+	timeout time.Duration
+	retries int
+	logger  interface{}
+	program string
 	version string
 
 	metricsPrefix   string
-	capture         Capture
-	sample          int
-	timeout         time.Duration
-	retries         int
 	metricsInterval time.Duration
 }
 
