@@ -16,6 +16,7 @@ type Ckflow C.kflow
 
 const MAX_CUSTOM_STR_LEN = 384
 
+// Flow has had its fields reordered via https://github.com/dkorunic/betteralign to minimize memory usage
 type Flow struct {
 	SrcBgpCommunity    string
 	SrcFlowTags        string
@@ -103,6 +104,7 @@ const (
 	Addr
 )
 
+// Custom has had its fields reordered via https://github.com/dkorunic/betteralign to minimize memory usage
 type Custom struct {
 	Str  string
 	U64  uint64
