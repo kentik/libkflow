@@ -22,15 +22,15 @@ type Sender struct {
 	agg     *agg.Agg
 	exit    chan struct{}
 	url     *url.URL
-	timeout time.Duration
 	client  *api.Client
-	sample  int
 	ticker  *time.Ticker
-	workers sync.WaitGroup
 	dns     chan []byte
 	Device  *api.Device
 	Errors  chan<- error
 	Metrics *metrics.Metrics
+	workers sync.WaitGroup
+	timeout time.Duration
+	sample  int
 }
 
 func newSender(url *url.URL, timeout time.Duration) *Sender {
