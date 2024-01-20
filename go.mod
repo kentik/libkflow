@@ -9,7 +9,7 @@ require (
 	github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
 	github.com/stretchr/testify v1.8.0
 	github.com/tinylib/msgp v1.1.6
-	go.uber.org/goleak v1.3.0
+	go.uber.org/goleak v1.1.10
 	zombiezen.com/go/capnproto2 v2.18.2+incompatible
 )
 
