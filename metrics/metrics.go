@@ -28,6 +28,14 @@ type Metrics struct {
 }
 
 func New(companyID int, deviceID int, program, version string) *Metrics {
+	// libkflow creates its own go-metrics Registry, which hold only its
+	// own metrics (or ones that its clients create with
+	reg := metrics.NewRegistry()
+	return NewWithRegistry(reg, companyID, deviceID, program, version)
+}
+
+// NewWithRegistry returns a new Metrics but allows a specific registry to be used rather than creating a new one
+func NewWithRegistry(reg metrics.Registry, companyID int, deviceID int, program, version string) *Metrics {
 	name := func(key string) string {
 		return fmt.Sprintf("client_%s", key)
 	}
@@ -45,10 +53,6 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 		"did":   strconv.Itoa(deviceID),
 	}
 
-	// libkflow creates its own go-metrics Registry, which hold only its
-	// own metrics (or ones that its clients create with
-	reg := metrics.NewRegistry()
-
 	return &Metrics{
 		reg:            reg,
 		TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), reg),
@@ -59,6 +63,10 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 		BytesSent:      metrics.GetOrRegisterMeter(name("BytesSent"), reg),
 		Extra:          extra,
 	}
+}
+
+func StartWithSetConf(registry metrics.Registry, logger cmetrics.Logger, url, email, token string, prefix string) {
+	cmetrics.SetConfWithRegistry(url, logger, prefix, "chf", nil, nil, &email, &token, registry)
 }
 
 func (m *Metrics) Start(url, email, token string, prefix string, interval time.Duration, proxy *url.URL) {
@@ -81,6 +89,19 @@ func (m *Metrics) Start(url, email, token string, prefix string, interval time.D
 		ApiEmail:           &email,
 		ApiPassword:        &token,
 	})
+}
+
+func (m *Metrics) Unregister() {
+	name := func(key string) string {
+		return fmt.Sprintf("client_%s", key)
+	}
+
+	m.reg.Unregister(name("Total"))
+	m.reg.Unregister(name("DownsampleFPS"))
+	m.reg.Unregister(name("OrigSampleRate"))
+	m.reg.Unregister(name("NewSampleRate"))
+	m.reg.Unregister(name("RateLimitDrops"))
+	m.reg.Unregister(name("BytesSent"))
 }
 
 func NewMeter() metrics.Meter {

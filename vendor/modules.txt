@@ -21,11 +21,14 @@ github.com/robfig/cron
 github.com/stretchr/testify/assert
 # github.com/tinylib/msgp v1.1.6
 github.com/tinylib/msgp/msgp
-# golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
+# go.uber.org/goleak v1.3.0
+go.uber.org/goleak
+go.uber.org/goleak/internal/stack
+# golang.org/x/net v0.2.0
 golang.org/x/net/context
 # gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
-# zombiezen.com/go/capnproto2 v2.18.2+incompatible
+# zombiezen.com/go/capnproto2 v2.18.2+incompatible => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
 zombiezen.com/go/capnproto2
 zombiezen.com/go/capnproto2/encoding/text
 zombiezen.com/go/capnproto2/internal/nodemap

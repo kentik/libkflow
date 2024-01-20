@@ -44,6 +44,7 @@ type Server struct {
 	res      chan *api.DNSResponse
 	mux      *mux.Router
 	listener net.Listener
+	cron     *cron.Cron
 }
 
 var (
@@ -109,6 +110,7 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	s.mux.HandleFunc(API+"/devices", s.wrap(s.devices))
 
 	c := cron.New()
+	s.cron = c
 	c.AddFunc("* * * * * *", func() {
 		flows := atomic.SwapUint64(&flowCounter, 0)
 		packets := atomic.SwapUint64(&packetCounter, 0)
@@ -120,6 +122,10 @@ func (s *Server) Serve(email, token string, dev *api.Device) error {
 	c.Start()
 
 	return http.Serve(s.listener, s.mux)
+}
+
+func (s *Server) Close() {
+	s.cron.Stop()
 }
 
 func (s *Server) URL(path string) *url.URL {

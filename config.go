@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	go_metrics "github.com/kentik/kit/go/legacy/go-metrics"
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/log"
@@ -17,19 +18,20 @@ import (
 
 // Config describes the libkflow configuration.
 type Config struct {
-	email   string
-	token   string
-	capture Capture
-	proxy   *url.URL
-	api     *url.URL
-	flow    *url.URL
-	metrics *url.URL
-	sample  int
-	timeout time.Duration
-	retries int
-	logger  interface{}
-	program string
-	version string
+	email    string
+	token    string
+	capture  Capture
+	proxy    *url.URL
+	api      *url.URL
+	flow     *url.URL
+	metrics  *url.URL
+	sample   int
+	timeout  time.Duration
+	retries  int
+	logger   interface{}
+	program  string
+	version  string
+	registry go_metrics.Registry
 
 	metricsPrefix   string
 	metricsInterval time.Duration
@@ -147,6 +149,11 @@ func (c *Config) SetMetricsInterval(dur time.Duration) {
 	c.metricsInterval = dur
 }
 
+// OverrideRegistry allows setting a registry which will act as a shared registry between multiple Senders.
+func (c *Config) OverrideRegistry(registry go_metrics.Registry) {
+	c.registry = registry
+}
+
 func (c *Config) client() *api.Client {
 	return api.NewClient(api.ClientConfig{
 		Email:   c.email,
@@ -164,10 +171,16 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 	if c.metricsInterval == 0 {
 		c.metricsInterval = 60 * time.Second
 	}
-	metrics := c.NewMetrics(dev)
-	metrics.Start(c.metrics.String(), c.email, c.token, c.metricsPrefix, c.metricsInterval, c.proxy)
 
-	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, metrics)
+	var senderMetrics *metrics.Metrics
+	if c.registry == nil {
+		senderMetrics = c.NewMetrics(dev)
+		senderMetrics.Start(c.metrics.String(), c.email, c.token, c.metricsPrefix, c.metricsInterval, c.proxy)
+	} else {
+		senderMetrics = metrics.NewWithRegistry(c.registry, dev.CompanyID, dev.ID, c.program, c.version)
+	}
+
+	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, senderMetrics)
 	if err != nil {
 		return nil, fmt.Errorf("agg setup error: %s", err)
 	}
@@ -175,7 +188,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 	sender := newSender(c.flow, c.timeout)
 	sender.Errors = errors
 	sender.sample = c.sample
-	sender.Metrics = metrics
+	sender.Metrics = senderMetrics
 
 	if c.capture.Device != "" {
 		nif, err := net.InterfaceByName(c.capture.Device)

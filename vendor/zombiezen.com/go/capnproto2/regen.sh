@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "** mktemplates"
-(cd internal/cmd/mktemplates && go build -tags=mktemplates)
+(cd internal/cmd/mktemplates && go build -tags=mktemplates mktemplates.go)
 
 echo "** capnpc-go"
 # Run tests so that we don't install a broken capnpc-go.
