@@ -89,31 +89,26 @@ func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
 	assert.NoError(err)
 	assert.NotNil(s)
 	s.Stop(time.Second)
-	s.Metrics.Unregister()
 
 	s, err = libkflow.NewSenderWithDeviceName(device.Name, errors, config)
 	assert.NoError(err)
 	assert.NotNil(s)
 	s.Stop(time.Second)
-	s.Metrics.Unregister()
 
 	s, err = libkflow.NewSenderWithDeviceName(device.Name, errors, config)
 	assert.NoError(err)
 	assert.NotNil(s)
 	s.Stop(time.Second)
-	s.Metrics.Unregister()
 
 	s, err = libkflow.NewSenderWithDeviceName(device.Name, errors, config)
 	assert.NoError(err)
 	assert.NotNil(s)
 	s.Stop(time.Second)
-	s.Metrics.Unregister()
 
 	s, err = libkflow.NewSenderWithDeviceName(device.Name, errors, config)
 	assert.NoError(err)
 	assert.NotNil(s)
 	s.Stop(time.Second)
-	s.Metrics.Unregister()
 
 	server.Close()
 

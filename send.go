@@ -195,6 +195,7 @@ func (s *Sender) monitor() {
 			s.workers.Wait()
 			s.ticker.Stop()
 			s.tickerCancelFunc()
+			s.Metrics.Unregister()
 			s.exit <- struct{}{}
 			log.Debugf("sender stopped")
 			return
