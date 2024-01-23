@@ -66,6 +66,19 @@ func NewSenderWithDeviceName(name string, errors chan<- error, cfg *Config) (*Se
 	return cfg.start(client, d, errors)
 }
 
+// NewSenderWithDeviceNameWithErrors creates a new flow Sender given a device name address and Config.
+// The returned error channel is managed internally and will be closed after Sender.Stop() is called.
+// If the timeout of Sender.Stop() is reached, it will return before the internal error channel is closed
+func NewSenderWithDeviceNameWithErrors(name string, cfg *Config) (*Sender, <-chan error, error) {
+	client := cfg.client()
+	d, err := lookupdev(client.GetDeviceByName(name))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cfg.startWithInternalErrors(client, d)
+}
+
 // NewSenderWithNewDevice creates a new device given device creation parameters,
 // and then creates a new flow Sender with that device, the error channel, and
 // the Config.
@@ -78,6 +91,16 @@ func NewSenderWithNewDevice(dev *api.DeviceCreate, errors chan<- error, cfg *Con
 	}
 
 	return cfg.start(client, d, errors)
+}
+
+func NewSenderWithNewDeviceWithErrors(dev *api.DeviceCreate, cfg *Config) (*Sender, <-chan error, error) {
+	client := cfg.client()
+	d, err := client.CreateDevice(dev)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cfg.startWithInternalErrors(client, d)
 }
 
 func NewSenderWithNewSiteAndDevice(siteAndDevice *api.SiteAndDeviceCreate, errors chan<- error, cfg *Config) (*Sender, error) {

@@ -1,7 +1,10 @@
 package libkflow_test
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,6 +13,7 @@ import (
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
+	"github.com/kentik/libkflow/flow"
 	metrics2 "github.com/kentik/libkflow/metrics"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
@@ -54,8 +58,170 @@ func TestNewSenderWithDeviceName(t *testing.T) {
 	assert.Nil(err)
 }
 
-func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
+func TestNewSenderWithDeviceNameWithErrors_NoErrs(t *testing.T) {
+	client, server, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	apiurl = server.URL(test.API)
+	flowurl = server.URL(test.FLOW)
+	metricsurl = server.URL(test.TSDB)
+
+	email = client.Email
+	token = client.Token
+
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
+
+	l := stubLeveledLogger{}
+
+	registry := metrics.NewRegistry()
+	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
+	config.OverrideRegistry(registry)
+	config.WithInternalErrors()
+
+	s, errors, err := libkflow.NewSenderWithDeviceNameWithErrors(device.Name, config)
+	assert.NoError(t, err)
+
+	errorsFromChan := make([]error, 0)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		for err := range errors {
+			errorsFromChan = append(errorsFromChan, err)
+		}
+		wg.Done()
+	}()
+
+	for i := 0; i < 5; i++ {
+		s.Send(&flow.Flow{
+			TimestampNano: time.Now().UnixNano(),
+		})
+	}
+
+	s.Stop(time.Second)
+
+	wg.Wait()
+
+	assert.Len(t, errorsFromChan, 0)
+}
+
+func TestNewSenderWithDeviceNameWithErrors_WithErrs(t *testing.T) {
+	client, server, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+	}))
+
+	apiurl = server.URL(test.API)
+	flowurl = server.URL(flowServer.URL)
+	metricsurl = server.URL(test.TSDB)
+
+	email = client.Email
+	token = client.Token
+
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
+
+	l := stubLeveledLogger{}
+
+	registry := metrics.NewRegistry()
+	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
+	config.OverrideRegistry(registry)
+	config.WithInternalErrors()
+
+	s, errors, err := libkflow.NewSenderWithDeviceNameWithErrors(device.Name, config)
+	assert.NoError(t, err)
+
+	errorsFromChan := make([]error, 0)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		for err := range errors {
+			errorsFromChan = append(errorsFromChan, err)
+		}
+		wg.Done()
+	}()
+
+	s.Send(&flow.Flow{
+		TimestampNano: time.Now().UnixNano(),
+	})
+
+	s.Stop(time.Second)
+
+	wg.Wait()
+
+	assert.Len(t, errorsFromChan, 1)
+}
+
+func TestNewSenderWithDeviceName_WithErrs_NoPanic(t *testing.T) {
+	client, server, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		time.Sleep(time.Second)
+	}))
+
+	apiurl = server.URL(test.API)
+	flowurl = server.URL(flowServer.URL)
+	metricsurl = server.URL(test.TSDB)
+
+	email = client.Email
+	token = client.Token
+
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
+
+	l := stubLeveledLogger{}
+
+	registry := metrics.NewRegistry()
+	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
+	config.OverrideRegistry(registry)
+
+	errors := make(chan error)
+
+	s, err := libkflow.NewSenderWithDeviceName(device.Name, errors, config)
+	assert.NoError(t, err)
+
+	errorsFromChan := make([]error, 0)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-time.After(time.Second):
+				return
+			case err := <-errors:
+				errorsFromChan = append(errorsFromChan, err)
+			}
+		}
+	}()
+
+	for i := 0; i < 100000; i++ {
+		s.Send(&flow.Flow{
+			TimestampNano: time.Now().UnixNano(),
+		})
+	}
+
+	s.Stop(time.Second * 0)
+
+	wg.Wait()
+
+	assert.Len(t, errorsFromChan, 1)
+}
+
+func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
 	client, server, device, err := test.NewClientServer()
 	if err != nil {
 		t.Fatal(err)

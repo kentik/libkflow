@@ -20,20 +20,21 @@ import (
 
 // A Sender aggregates and transmits flow information to Kentik.
 type Sender struct {
-	agg              *agg.Agg
-	exit             chan struct{}
-	url              *url.URL
-	timeout          time.Duration
-	client           *api.Client
-	sample           int
-	ticker           *time.Ticker
-	tickerCtx        context.Context
-	tickerCancelFunc context.CancelFunc
-	workers          sync.WaitGroup
-	dns              chan []byte
-	Device           *api.Device
-	Errors           chan<- error
-	Metrics          *metrics.Metrics
+	agg               *agg.Agg
+	exit              chan struct{}
+	url               *url.URL
+	timeout           time.Duration
+	client            *api.Client
+	sample            int
+	ticker            *time.Ticker
+	tickerCtx         context.Context
+	tickerCancelFunc  context.CancelFunc
+	workers           sync.WaitGroup
+	dns               chan []byte
+	Device            *api.Device
+	Errors            chan<- error
+	useInternalErrors bool
+	Metrics           *metrics.Metrics
 }
 
 func newSender(url *url.URL, timeout time.Duration) *Sender {
@@ -196,6 +197,9 @@ func (s *Sender) monitor() {
 			s.ticker.Stop()
 			s.tickerCancelFunc()
 			s.Metrics.Unregister()
+			if s.useInternalErrors {
+				close(s.Errors)
+			}
 			s.exit <- struct{}{}
 			log.Debugf("sender stopped")
 			return

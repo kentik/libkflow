@@ -18,20 +18,21 @@ import (
 
 // Config describes the libkflow configuration.
 type Config struct {
-	email    string
-	token    string
-	capture  Capture
-	proxy    *url.URL
-	api      *url.URL
-	flow     *url.URL
-	metrics  *url.URL
-	sample   int
-	timeout  time.Duration
-	retries  int
-	logger   interface{}
-	program  string
-	version  string
-	registry go_metrics.Registry
+	email             string
+	token             string
+	capture           Capture
+	proxy             *url.URL
+	api               *url.URL
+	flow              *url.URL
+	metrics           *url.URL
+	sample            int
+	timeout           time.Duration
+	retries           int
+	logger            interface{}
+	program           string
+	version           string
+	registry          go_metrics.Registry
+	useInternalErrors bool
 
 	metricsPrefix   string
 	metricsInterval time.Duration
@@ -154,6 +155,10 @@ func (c *Config) OverrideRegistry(registry go_metrics.Registry) {
 	c.registry = registry
 }
 
+func (c *Config) WithInternalErrors() {
+	c.useInternalErrors = true
+}
+
 func (c *Config) client() *api.Client {
 	return api.NewClient(api.ClientConfig{
 		Email:   c.email,
@@ -165,6 +170,21 @@ func (c *Config) client() *api.Client {
 
 		Logger: c.logger,
 	})
+}
+
+func (c *Config) startWithInternalErrors(client *api.Client, dev *api.Device) (*Sender, <-chan error, error) {
+	errChan := make(chan error)
+	sender, err := c.start(client, dev, errChan)
+	if err != nil {
+		close(errChan)
+		return nil, nil, err
+	}
+
+	if c.useInternalErrors {
+		sender.useInternalErrors = true
+	}
+
+	return sender, errChan, nil
 }
 
 func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error) (*Sender, error) {
