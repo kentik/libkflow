@@ -150,13 +150,9 @@ func (c *Config) SetMetricsInterval(dur time.Duration) {
 	c.metricsInterval = dur
 }
 
-// OverrideRegistry allows setting a registry which will act as a shared registry between multiple Senders.
-func (c *Config) OverrideRegistry(registry go_metrics.Registry) {
+// WithRegistry allows setting a registry which will act as a shared registry between multiple Senders.
+func (c *Config) WithRegistry(registry go_metrics.Registry) {
 	c.registry = registry
-}
-
-func (c *Config) WithInternalErrors() {
-	c.useInternalErrors = true
 }
 
 func (c *Config) client() *api.Client {
@@ -180,9 +176,7 @@ func (c *Config) startWithInternalErrors(client *api.Client, dev *api.Device) (*
 		return nil, nil, err
 	}
 
-	if c.useInternalErrors {
-		sender.useInternalErrors = true
-	}
+	sender.useInternalErrors = true
 
 	return sender, errChan, nil
 }

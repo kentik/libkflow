@@ -78,8 +78,7 @@ func TestNewSenderWithDeviceNameWithErrors_NoErrs(t *testing.T) {
 
 	registry := metrics.NewRegistry()
 	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
-	config.OverrideRegistry(registry)
-	config.WithInternalErrors()
+	config.WithRegistry(registry)
 
 	s, errors, err := libkflow.NewSenderWithDeviceNameWithErrors(device.Name, config)
 	assert.NoError(t, err)
@@ -132,8 +131,7 @@ func TestNewSenderWithDeviceNameWithErrors_WithErrs(t *testing.T) {
 
 	registry := metrics.NewRegistry()
 	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
-	config.OverrideRegistry(registry)
-	config.WithInternalErrors()
+	config.WithRegistry(registry)
 
 	s, errors, err := libkflow.NewSenderWithDeviceNameWithErrors(device.Name, config)
 	assert.NoError(t, err)
@@ -185,7 +183,7 @@ func TestNewSenderWithDeviceName_WithErrs_NoPanic(t *testing.T) {
 
 	registry := metrics.NewRegistry()
 	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
-	config.OverrideRegistry(registry)
+	config.WithRegistry(registry)
 
 	errors := make(chan error)
 
@@ -243,7 +241,7 @@ func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
 
 	registry := metrics.NewRegistry()
 	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
-	config.OverrideRegistry(registry)
+	config.WithRegistry(registry)
 
 	// kick off the tick go routines from the go metrics library
 	// these are only started once per process
