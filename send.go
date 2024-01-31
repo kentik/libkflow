@@ -3,6 +3,7 @@ package libkflow
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"net/url"
 	"os"
 	"sync"
@@ -19,26 +20,32 @@ import (
 
 // A Sender aggregates and transmits flow information to Kentik.
 type Sender struct {
-	agg     *agg.Agg
-	exit    chan struct{}
-	url     *url.URL
-	timeout time.Duration
-	client  *api.Client
-	sample  int
-	ticker  *time.Ticker
-	workers sync.WaitGroup
-	dns     chan []byte
-	Device  *api.Device
-	Errors  chan<- error
-	Metrics *metrics.Metrics
+	agg               *agg.Agg
+	exit              chan struct{}
+	url               *url.URL
+	timeout           time.Duration
+	client            *api.Client
+	sample            int
+	ticker            *time.Ticker
+	tickerCtx         context.Context
+	tickerCancelFunc  context.CancelFunc
+	workers           sync.WaitGroup
+	dns               chan []byte
+	Device            *api.Device
+	Errors            chan<- error
+	useInternalErrors bool
+	Metrics           *metrics.Metrics
 }
 
 func newSender(url *url.URL, timeout time.Duration) *Sender {
+	tickerCtx, cancelFunc := context.WithCancel(context.Background())
 	return &Sender{
-		exit:    make(chan struct{}),
-		url:     url,
-		timeout: timeout,
-		ticker:  time.NewTicker(20 * time.Minute),
+		exit:             make(chan struct{}),
+		url:              url,
+		timeout:          timeout,
+		ticker:           time.NewTicker(20 * time.Minute),
+		tickerCtx:        tickerCtx,
+		tickerCancelFunc: cancelFunc,
 	}
 }
 
@@ -188,6 +195,11 @@ func (s *Sender) monitor() {
 		case <-s.agg.Done():
 			s.workers.Wait()
 			s.ticker.Stop()
+			s.tickerCancelFunc()
+			s.Metrics.Unregister()
+			if s.useInternalErrors {
+				close(s.Errors)
+			}
 			s.exit <- struct{}{}
 			log.Debugf("sender stopped")
 			return
@@ -196,29 +208,35 @@ func (s *Sender) monitor() {
 }
 
 func (s *Sender) update() {
-	for range s.ticker.C {
-		updated, err := s.client.GetDeviceByID(s.Device.ID)
-		if err != nil {
-			if api.IsErrorWithStatusCode(err, 404) {
-				updated = &api.Device{}
-			} else {
-				log.Debugf("device API request failed: %s", err)
-				continue
+	for {
+		select {
+		case <-s.tickerCtx.Done():
+			return
+
+		case <-s.ticker.C:
+			updated, err := s.client.GetDeviceByID(s.Device.ID)
+			if err != nil {
+				if api.IsErrorWithStatusCode(err, 404) {
+					updated = &api.Device{}
+				} else {
+					log.Debugf("device API request failed: %s", err)
+					continue
+				}
 			}
-		}
 
-		if s.Device.MaxFlowRate != updated.MaxFlowRate {
-			log.Debugf("updating max FPS to %d", updated.MaxFlowRate)
-			s.Device.MaxFlowRate = updated.MaxFlowRate
-			s.agg.Configure(updated.MaxFlowRate)
-		}
+			if s.Device.MaxFlowRate != updated.MaxFlowRate {
+				log.Debugf("updating max FPS to %d", updated.MaxFlowRate)
+				s.Device.MaxFlowRate = updated.MaxFlowRate
+				s.agg.Configure(updated.MaxFlowRate)
+			}
 
-		// if the configured sample rate is 0 then the sender
-		// may be using the device sample rate which has just
-		// changed, so abort the program
-		if s.sample == 0 && s.Device.SampleRate != updated.SampleRate {
-			log.Debugf("device sample rate changed, aborting")
-			os.Exit(1)
+			// if the configured sample rate is 0 then the sender
+			// may be using the device sample rate which has just
+			// changed, so abort the program
+			if s.sample == 0 && s.Device.SampleRate != updated.SampleRate {
+				log.Debugf("device sample rate changed, aborting")
+				os.Exit(1)
+			}
 		}
 	}
 }
