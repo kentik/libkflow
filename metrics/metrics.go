@@ -24,7 +24,6 @@ type Metrics struct {
 	NewSampleRate  metrics.Histogram
 	RateLimitDrops metrics.Meter
 	BytesSent      metrics.Meter
-	Extra          map[string]string
 }
 
 func New(companyID int, deviceID int, program, version string) *Metrics {
@@ -36,32 +35,20 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 
 // NewWithRegistry returns a new Metrics but allows a specific registry to be used rather than creating a new one
 func NewWithRegistry(reg metrics.Registry, companyID int, deviceID int, program, version string) *Metrics {
-	name := func(key string) string {
-		return fmt.Sprintf("client_%s", key)
-	}
-
 	sample := func() metrics.Sample {
 		return metrics.NewExpDecaySample(MetricsSampleSize, MetricsSampleAlpha)
 	}
 
-	extra := map[string]string{
-		"ver":   program + "-" + version,
-		"ft":    program,
-		"dt":    "libkflow",
-		"level": "primary",
-		"cid":   strconv.Itoa(companyID),
-		"did":   strconv.Itoa(deviceID),
-	}
+	suffix := fmt.Sprintf("^ver=%s^ft=%s^dt=%s^level=%s^cid=%s^did=%s", program+"-"+version, program, "libkflow", "primary", strconv.Itoa(companyID), strconv.Itoa(deviceID))
 
 	return &Metrics{
 		reg:            reg,
-		TotalFlowsIn:   metrics.GetOrRegisterMeter(name("Total"), reg),
-		TotalFlowsOut:  metrics.GetOrRegisterMeter(name("DownsampleFPS"), reg),
-		OrigSampleRate: metrics.GetOrRegisterHistogram(name("OrigSampleRate"), reg, sample()),
-		NewSampleRate:  metrics.GetOrRegisterHistogram(name("NewSampleRate"), reg, sample()),
-		RateLimitDrops: metrics.GetOrRegisterMeter(name("RateLimitDrops"), reg),
-		BytesSent:      metrics.GetOrRegisterMeter(name("BytesSent"), reg),
-		Extra:          extra,
+		TotalFlowsIn:   metrics.GetOrRegisterMeter("client_Total"+suffix, reg),
+		TotalFlowsOut:  metrics.GetOrRegisterMeter("client_DownsampleFPS"+suffix, reg),
+		OrigSampleRate: metrics.GetOrRegisterHistogram("client_OrigSampleRate"+suffix, reg, sample()),
+		NewSampleRate:  metrics.GetOrRegisterHistogram("client_NewSampleRate"+suffix, reg, sample()),
+		RateLimitDrops: metrics.GetOrRegisterMeter("client_RateLimitDrops"+suffix, reg),
+		BytesSent:      metrics.GetOrRegisterMeter("client_BytesSent"+suffix, reg),
 	}
 }
 
@@ -85,23 +72,18 @@ func (m *Metrics) Start(url, email, token string, prefix string, interval time.D
 		Send:               make(chan []byte, MaxHttpRequests),
 		ProxyUrl:           proxyURL,
 		MaxHttpOutstanding: MaxHttpRequests,
-		Extra:              m.Extra,
 		ApiEmail:           &email,
 		ApiPassword:        &token,
 	})
 }
 
 func (m *Metrics) Unregister() {
-	name := func(key string) string {
-		return fmt.Sprintf("client_%s", key)
-	}
-
-	m.reg.Unregister(name("Total"))
-	m.reg.Unregister(name("DownsampleFPS"))
-	m.reg.Unregister(name("OrigSampleRate"))
-	m.reg.Unregister(name("NewSampleRate"))
-	m.reg.Unregister(name("RateLimitDrops"))
-	m.reg.Unregister(name("BytesSent"))
+	m.reg.Unregister("client_Total")
+	m.reg.Unregister("client_DownsampleFPS")
+	m.reg.Unregister("client_OrigSampleRate")
+	m.reg.Unregister("client_NewSampleRate")
+	m.reg.Unregister("client_RateLimitDrops")
+	m.reg.Unregister("client_BytesSent")
 }
 
 func NewMeter() metrics.Meter {
