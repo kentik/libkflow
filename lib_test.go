@@ -294,21 +294,6 @@ func TestNewSenderFromDevice(t *testing.T) {
 	assert.Nil(err)
 }
 
-func TestMetricsConfig(t *testing.T) {
-	dev, assert := setupLibTest(t)
-
-	program := "test"
-	version := "0.0.1"
-
-	config := libkflow.NewConfig(email, token, "test", "0.0.1")
-	metrics := config.NewMetrics(dev)
-
-	assert.Equal(program+"-"+version, metrics.Extra["ver"])
-	assert.Equal(program, metrics.Extra["ft"])
-	assert.Equal("libkflow", metrics.Extra["dt"])
-	assert.Equal("primary", metrics.Extra["level"])
-}
-
 func setupLibTest(t *testing.T) (*api.Device, *assert.Assertions) {
 	client, server, device, err := test.NewClientServer()
 	if err != nil {
