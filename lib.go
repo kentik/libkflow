@@ -114,9 +114,25 @@ func NewSenderWithNewSiteAndDevice(siteAndDevice *api.SiteAndDeviceCreate, error
 	return cfg.start(client, d, errors)
 }
 
+func NewSenderWithNewSiteAndDeviceWithErrors(siteAndDevice *api.SiteAndDeviceCreate, cfg *Config) (*Sender, <-chan error, error) {
+	client := cfg.client()
+	d, err := client.CreateDeviceAndSite(siteAndDevice)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cfg.startWithInternalErrors(client, d)
+}
+
 func NewSenderFromDevice(d *api.Device, errors chan<- error, cfg *Config) (*Sender, error) {
 	client := cfg.client()
 	return cfg.start(client, d, errors)
+}
+
+// NewSenderFromDeviceWithErrors returns a Sender and an error channel for an existing Device
+func NewSenderFromDeviceWithErrors(d *api.Device, cfg *Config) (*Sender, <-chan error, error) {
+	client := cfg.client()
+	return cfg.startWithInternalErrors(client, d)
 }
 
 func lookupdev(dev *api.Device, err error) (*api.Device, error) {

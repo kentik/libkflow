@@ -281,6 +281,123 @@ func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
 	goleak.VerifyNone(t, ignore)
 }
 
+func TestNewSenderFromDeviceWithErrors(t *testing.T) {
+	client, server, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+	}))
+
+	apiurl = server.URL(test.API)
+	flowurl = server.URL(flowServer.URL)
+	metricsurl = server.URL(test.TSDB)
+
+	email = client.Email
+	token = client.Token
+
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
+
+	l := stubLeveledLogger{}
+
+	registry := metrics.NewRegistry()
+	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
+	config.WithRegistry(registry)
+
+	s, errors, err := libkflow.NewSenderFromDeviceWithErrors(device, config)
+
+	assert.NotNil(t, s)
+	assert.Nil(t, err)
+
+	errorsFromChan := make([]error, 0)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		for err := range errors {
+			errorsFromChan = append(errorsFromChan, err)
+		}
+		wg.Done()
+	}()
+
+	s.Send(&flow.Flow{
+		TimestampNano: time.Now().UnixNano(),
+	})
+
+	s.Stop(time.Second)
+
+	wg.Wait()
+
+	assert.Len(t, errorsFromChan, 1)
+}
+
+func TestNewSenderWithNewSiteAndDeviceWithErrors(t *testing.T) {
+	client, server, device, err := test.NewClientServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flowServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+	}))
+
+	apiurl = server.URL(test.API)
+	flowurl = server.URL(flowServer.URL)
+	metricsurl = server.URL(test.TSDB)
+
+	email = client.Email
+	token = client.Token
+
+	config := libkflow.NewConfig(email, token, "test", "0.0.1")
+	config.OverrideURLs(apiurl, flowurl, metricsurl)
+
+	l := stubLeveledLogger{}
+
+	registry := metrics.NewRegistry()
+	metrics2.StartWithSetConf(registry, &l, metricsurl.String(), email, token, "chf")
+	config.WithRegistry(registry)
+
+	s, errors, err := libkflow.NewSenderWithNewSiteAndDeviceWithErrors(&api.SiteAndDeviceCreate{
+		Site: &api.SiteCreate{
+			Title:   "",
+			City:    "",
+			Region:  "",
+			Country: "",
+		},
+		Device: &api.DeviceCreate{
+			AllowNoIP: true,
+			Name:      device.Name,
+		},
+	}, config)
+
+	assert.NotNil(t, s)
+	assert.Nil(t, err)
+
+	errorsFromChan := make([]error, 0)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		for err := range errors {
+			errorsFromChan = append(errorsFromChan, err)
+		}
+		wg.Done()
+	}()
+
+	s.Send(&flow.Flow{
+		TimestampNano: time.Now().UnixNano(),
+	})
+
+	s.Stop(time.Second)
+
+	wg.Wait()
+
+	assert.Len(t, errorsFromChan, 1)
+}
+
 func TestNewSenderFromDevice(t *testing.T) {
 	dev, assert := setupLibTest(t)
 
