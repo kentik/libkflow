@@ -19,6 +19,7 @@ github.com/pmezard/go-difflib/difflib
 github.com/robfig/cron
 # github.com/stretchr/testify v1.8.0
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/tinylib/msgp v1.1.6
 github.com/tinylib/msgp/msgp
 # go.uber.org/goleak v1.1.10

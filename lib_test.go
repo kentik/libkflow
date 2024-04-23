@@ -16,6 +16,7 @@ import (
 	"github.com/kentik/libkflow/flow"
 	metrics2 "github.com/kentik/libkflow/metrics"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
@@ -309,8 +310,8 @@ func TestNewSenderFromDeviceWithErrors(t *testing.T) {
 
 	s, errors, err := libkflow.NewSenderFromDeviceWithErrors(device, config)
 
-	assert.NotNil(t, s)
-	assert.Nil(t, err)
+	require.NotNil(t, s)
+	require.Nil(t, err)
 
 	errorsFromChan := make([]error, 0)
 
@@ -373,8 +374,8 @@ func TestNewSenderWithNewSiteAndDeviceWithErrors(t *testing.T) {
 		},
 	}, config)
 
-	assert.NotNil(t, s)
-	assert.Nil(t, err)
+	require.NotNil(t, s)
+	require.Nil(t, err)
 
 	errorsFromChan := make([]error, 0)
 

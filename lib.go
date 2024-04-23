@@ -104,6 +104,7 @@ func NewSenderWithNewDeviceWithErrors(dev *api.DeviceCreate, cfg *Config) (*Send
 	return cfg.startWithInternalErrors(client, d)
 }
 
+// NewSenderWithNewSiteAndDevice creates a new device and site then returns a flow Sender for that newly created device
 func NewSenderWithNewSiteAndDevice(siteAndDevice *api.SiteAndDeviceCreate, errors chan<- error, cfg *Config) (*Sender, error) {
 	client := cfg.client()
 	d, err := client.CreateDeviceAndSite(siteAndDevice)
@@ -114,6 +115,9 @@ func NewSenderWithNewSiteAndDevice(siteAndDevice *api.SiteAndDeviceCreate, error
 	return cfg.start(client, d, errors)
 }
 
+// NewSenderWithNewSiteAndDeviceWithErrors is the same as NewSenderWithNewSiteAndDeviceWithErrors except rather than
+// passing in a channel to receive errors, a channel is returned by the function. The channel is closed after Sender.Stop is called
+// and all flow has been dispatched
 func NewSenderWithNewSiteAndDeviceWithErrors(siteAndDevice *api.SiteAndDeviceCreate, cfg *Config) (*Sender, <-chan error, error) {
 	client := cfg.client()
 	d, err := client.CreateDeviceAndSite(siteAndDevice)
@@ -124,6 +128,7 @@ func NewSenderWithNewSiteAndDeviceWithErrors(siteAndDevice *api.SiteAndDeviceCre
 	return cfg.startWithInternalErrors(client, d)
 }
 
+// NewSenderFromDevice returns a Sender for an existing Device
 func NewSenderFromDevice(d *api.Device, errors chan<- error, cfg *Config) (*Sender, error) {
 	client := cfg.client()
 	return cfg.start(client, d, errors)
