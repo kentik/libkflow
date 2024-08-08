@@ -13,6 +13,16 @@ require (
 	zombiezen.com/go/capnproto2 v2.18.2+incompatible
 )
 
-go 1.13
+require (
+	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/philhofer/fwd v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/tools v0.23.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+go 1.17
 
 replace zombiezen.com/go/capnproto2 => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
