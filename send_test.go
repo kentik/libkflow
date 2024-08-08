@@ -2,7 +2,7 @@ package libkflow
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net"
 	"testing"
@@ -102,7 +102,7 @@ func setup(t testing.TB) (*Sender, *test.Server, *assert.Assertions) {
 		t.Fatal(err)
 	}
 
-	server.Log.SetOutput(ioutil.Discard)
+	server.Log.SetOutput(io.Discard)
 
 	url := server.URL(test.FLOW)
 	sender := newSender(url, 1*time.Second)
