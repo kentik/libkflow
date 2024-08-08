@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -342,7 +341,7 @@ func (c *Client) UpdateInterfaces(dev *Device, nif *net.Interface) error {
 		return err
 	}
 	defer r.Body.Close()
-	io.Copy(ioutil.Discard, r.Body)
+	io.Copy(io.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return &Error{StatusCode: r.StatusCode}
@@ -368,7 +367,7 @@ func (c *Client) UpdateInterfacesDirectly(dev *Device, updates map[string]Interf
 		return err
 	}
 	defer r.Body.Close()
-	io.Copy(ioutil.Discard, r.Body)
+	io.Copy(io.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return &Error{StatusCode: r.StatusCode}
@@ -384,7 +383,7 @@ func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	}
 
 	defer r.Body.Close()
-	io.Copy(ioutil.Discard, r.Body)
+	io.Copy(io.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return fmt.Errorf("api: HTTP status code %d", r.StatusCode)
@@ -414,7 +413,7 @@ func (c *Client) UpdateExportStatus(status *ExportStatus) error {
 		return err
 	}
 	defer r.Body.Close()
-	io.Copy(ioutil.Discard, r.Body)
+	io.Copy(io.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return &Error{StatusCode: r.StatusCode}
@@ -430,7 +429,7 @@ func (c *Client) SendDNS(url string, buf *bytes.Buffer) error {
 	}
 
 	defer r.Body.Close()
-	io.Copy(ioutil.Discard, r.Body)
+	io.Copy(io.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return fmt.Errorf("api: HTTP status code %d", r.StatusCode)

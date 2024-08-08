@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"net"
@@ -331,7 +330,7 @@ func (s *Server) flow(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) tsdb(w http.ResponseWriter, r *http.Request) {
 	// just ignore it
-	io.Copy(ioutil.Discard, r.Body)
+	io.Copy(io.Discard, r.Body)
 }
 
 func (s *Server) dns(w http.ResponseWriter, r *http.Request) {
