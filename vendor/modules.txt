@@ -1,44 +1,66 @@
 # github.com/davecgh/go-spew v1.1.1
+## explicit
 github.com/davecgh/go-spew/spew
 # github.com/gorilla/mux v1.8.0
+## explicit; go 1.12
 github.com/gorilla/mux
 # github.com/hashicorp/go-cleanhttp v0.5.1
+## explicit
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.6.6
+## explicit; go 1.13
 github.com/hashicorp/go-retryablehttp
 # github.com/jessevdk/go-flags v1.4.0
+## explicit
 github.com/jessevdk/go-flags
 # github.com/kentik/kit/go/legacy v0.0.2
+## explicit; go 1.16
 github.com/kentik/kit/go/legacy/common/cmetrics
 github.com/kentik/kit/go/legacy/go-metrics
 # github.com/philhofer/fwd v1.1.1
+## explicit
 github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.0
+## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
+## explicit
 github.com/robfig/cron
 # github.com/stretchr/testify v1.8.0
+## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tinylib/msgp v1.1.6
+## explicit; go 1.14
 github.com/tinylib/msgp/msgp
 # go.uber.org/goleak v1.1.10
+## explicit; go 1.13
 go.uber.org/goleak
 go.uber.org/goleak/internal/stack
 # golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
+## explicit; go 1.11
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/net v0.2.0
+# golang.org/x/net v0.27.0
+## explicit; go 1.18
 golang.org/x/net/context
-# golang.org/x/tools v0.1.12
+# golang.org/x/tools v0.23.0
+## explicit; go 1.19
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
-golang.org/x/tools/go/internal/gcimporter
-golang.org/x/tools/go/internal/pkgbits
-golang.org/x/tools/internal/typeparams
+golang.org/x/tools/go/types/objectpath
+golang.org/x/tools/internal/aliases
+golang.org/x/tools/internal/gcimporter
+golang.org/x/tools/internal/pkgbits
+golang.org/x/tools/internal/stdlib
+golang.org/x/tools/internal/tokeninternal
+golang.org/x/tools/internal/typesinternal
+golang.org/x/tools/internal/versions
 # gopkg.in/yaml.v3 v3.0.1
+## explicit
 gopkg.in/yaml.v3
 # zombiezen.com/go/capnproto2 v2.18.2+incompatible => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
+## explicit; go 1.19
 zombiezen.com/go/capnproto2
 zombiezen.com/go/capnproto2/encoding/text
 zombiezen.com/go/capnproto2/internal/nodemap
@@ -46,3 +68,4 @@ zombiezen.com/go/capnproto2/internal/packed
 zombiezen.com/go/capnproto2/internal/schema
 zombiezen.com/go/capnproto2/internal/strquote
 zombiezen.com/go/capnproto2/schemas
+# zombiezen.com/go/capnproto2 => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
