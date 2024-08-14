@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
 	"net"
 	"time"
 
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/log"
 )
 
 func main() {
@@ -26,6 +26,7 @@ func main() {
 	config.SetServer(host, port)
 	config.SetRetries(4)
 	config.SetVerbose(1)
+	config.SetLeveledLogger(log.Global())
 
 	s, err := libkflow.NewSenderWithDeviceID(deviceID, errors, config)
 	if err != nil {
