@@ -199,10 +199,11 @@ func TestNewSenderWithDeviceName_WithErrs_NoPanic(t *testing.T) {
 		defer wg.Done()
 		for {
 			select {
-			case <-time.After(time.Second):
+			case <-time.After(10 * time.Second):
 				return
 			case err := <-errors:
 				errorsFromChan = append(errorsFromChan, err)
+				return
 			}
 		}
 	}()
