@@ -15,6 +15,7 @@ import (
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/flow"
+	"github.com/kentik/libkflow/log"
 	"github.com/kentik/libkflow/status"
 )
 
@@ -80,6 +81,7 @@ func kflowInit(cfg *KflowConfig, dev *KflowDevice) C.int {
 	config.SetTimeout(timeout)
 	config.SetVerbose(int(cfg.verbose))
 	config.OverrideURLs(apiurl, flowurl, metricsurl)
+	config.SetLeveledLogger(log.Global())
 
 	switch {
 	case cfg.device_id > 0:
