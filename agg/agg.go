@@ -1,7 +1,6 @@
 package agg
 
 import (
-	"log"
 	"sync"
 	"time"
 
@@ -96,8 +95,6 @@ func (a *Agg) aggregate() {
 	for {
 		select {
 		case <-a.ticker.C:
-			log.Printf("agg size %d", a.queue.count)
-			log.Printf("dropped %d", a.queue.dropped)
 			a.dispatch()
 		case <-a.quitting:
 			a.dispatch()

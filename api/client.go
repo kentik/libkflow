@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -385,7 +384,6 @@ func (c *Client) UpdateInterfacesDirectly(dev *Device, updates map[string]Interf
 func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	r, err := c.do("POST", url, "application/binary", buf, true)
 	if err != nil {
-		log.Printf("error in sendFlow %v", err)
 		return err
 	}
 
