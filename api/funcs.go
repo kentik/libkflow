@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// NormalizeName is a helper for normalization of the devices name into an acceptable format for the Kentik API device
+// endpoints.
 func NormalizeName(name string) string {
 	return strings.Replace(name, ".", "_", -1)
 }
