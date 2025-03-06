@@ -25,12 +25,13 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	Email   string
-	Token   string
-	Timeout time.Duration
-	Retries int
-	API     *url.URL
-	Proxy   *url.URL
+	Email               string
+	Token               string
+	Timeout             time.Duration
+	TLSHandshakeTimeout time.Duration
+	Retries             int
+	API                 *url.URL
+	Proxy               *url.URL
 
 	Logger interface{}
 }
@@ -60,6 +61,10 @@ func NewClient(config ClientConfig) *Client {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		DisableCompression:    false,
+	}
+
+	if config.TLSHandshakeTimeout.Seconds() > 0 {
+		transport.TLSHandshakeTimeout = config.TLSHandshakeTimeout
 	}
 
 	retryClient := retryablehttp.NewClient()
