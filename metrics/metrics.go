@@ -24,22 +24,31 @@ type Metrics struct {
 	NewSampleRate  metrics.Histogram
 	RateLimitDrops metrics.Meter
 	BytesSent      metrics.Meter
+	BufferSize     metrics.Gauge
 }
 
 func New(companyID int, deviceID int, program, version string) *Metrics {
 	// libkflow creates its own go-metrics Registry, which hold only its
 	// own metrics (or ones that its clients create with
 	reg := metrics.NewRegistry()
-	return NewWithRegistry(reg, companyID, deviceID, program, version)
+	return NewWithRegistry(reg, companyID, deviceID, program, version, nil)
+}
+
+type Options struct {
+	ExporterID int
 }
 
 // NewWithRegistry returns a new Metrics but allows a specific registry to be used rather than creating a new one
-func NewWithRegistry(reg metrics.Registry, companyID int, deviceID int, program, version string) *Metrics {
+func NewWithRegistry(reg metrics.Registry, companyID int, deviceID int, program, version string, opts *Options) *Metrics {
 	sample := func() metrics.Sample {
 		return metrics.NewExpDecaySample(MetricsSampleSize, MetricsSampleAlpha)
 	}
 
-	suffix := fmt.Sprintf("^ver=%s^ft=%s^dt=%s^level=%s^cid=%s^did=%s", program+"-"+version, program, "libkflow", "primary", strconv.Itoa(companyID), strconv.Itoa(deviceID))
+	exporterIdParam := ""
+	if opts != nil && opts.ExporterID > 0 {
+		exporterIdParam = fmt.Sprintf("^exportID=%s", strconv.Itoa(opts.ExporterID))
+	}
+	suffix := fmt.Sprintf("^ver=%s^ft=%s^dt=%s^level=%s^cid=%s^did=%s%s", program+"-"+version, program, "libkflow", "primary", strconv.Itoa(companyID), strconv.Itoa(deviceID), exporterIdParam)
 
 	return &Metrics{
 		reg:            reg,
@@ -49,6 +58,7 @@ func NewWithRegistry(reg metrics.Registry, companyID int, deviceID int, program,
 		NewSampleRate:  metrics.GetOrRegisterHistogram("client_NewSampleRate"+suffix, reg, sample()),
 		RateLimitDrops: metrics.GetOrRegisterMeter("client_RateLimitDrops"+suffix, reg),
 		BytesSent:      metrics.GetOrRegisterMeter("client_BytesSent"+suffix, reg),
+		BufferSize:     metrics.GetOrRegisterGauge("client_BufferSize"+suffix, reg),
 	}
 }
 

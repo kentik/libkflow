@@ -112,6 +112,8 @@ func (a *Agg) dispatch() {
 		return
 	}
 
+	a.metrics.BufferSize.Update(int64(a.queue.Length()))
+
 	a.Lock()
 	a.metrics.TotalFlowsIn.Mark(a.queued)
 	a.queued = 0

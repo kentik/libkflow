@@ -33,6 +33,7 @@ type Config struct {
 	version           string
 	registry          go_metrics.Registry
 	useInternalErrors bool
+	metricsExporterID int
 
 	metricsPrefix   string
 	metricsInterval time.Duration
@@ -155,6 +156,10 @@ func (c *Config) WithRegistry(registry go_metrics.Registry) {
 	c.registry = registry
 }
 
+func (c *Config) WithExporterID(id int) {
+	c.metricsExporterID = id
+}
+
 func (c *Config) client() *api.Client {
 	return api.NewClient(api.ClientConfig{
 		Email:   c.email,
@@ -191,7 +196,11 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 		senderMetrics = c.NewMetrics(dev)
 		senderMetrics.Start(c.metrics.String(), c.email, c.token, c.metricsPrefix, c.metricsInterval, c.proxy)
 	} else {
-		senderMetrics = metrics.NewWithRegistry(c.registry, dev.CompanyID, dev.ID, c.program, c.version)
+		var opts = &metrics.Options{}
+		if c.metricsExporterID > 0 {
+			opts.ExporterID = c.metricsExporterID
+		}
+		senderMetrics = metrics.NewWithRegistry(c.registry, dev.CompanyID, dev.ID, c.program, c.version, opts)
 	}
 
 	agg, err := agg.NewAgg(time.Second, dev.MaxFlowRate, senderMetrics)
