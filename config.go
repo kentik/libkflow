@@ -5,7 +5,6 @@ import (
 	go_log "log"
 	"net"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
@@ -234,7 +233,7 @@ func defaultConfig(email, token, program, version string) *Config {
 		metrics:       parseURL("https://flow.kentik.com/tsdb"),
 		timeout:       10 * time.Second,
 		retries:       0,
-		logger:        go_log.New(os.Stderr, "", go_log.LstdFlags), // default behavior of underlying logger
+		logger:        go_log.Default(),
 		program:       program,
 		version:       version,
 		metricsPrefix: "chf",
