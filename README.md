@@ -62,7 +62,7 @@ architectures laid out in a specific directory structure.
 
 First, checkout the desired version from git and ensure it is tagged correctly. 
 ```shell
-git tag -a $VERSION
+git checkout $VERSION
 ```
 
 First, ensure that the musl cross compilers are installed. This can be done
