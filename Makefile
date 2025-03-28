@@ -50,6 +50,9 @@ $(WORK)/server: $(SRC)
 $(WORK)/demo: kflow.h $(CURDIR)/c/demo.c $(WORK)/libkflow.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -I $(<D) $(filter-out $<,$^)
 
+internal-libs:
+	./scripts/build_libs.sh
+
 test:
 	@go test -v $(shell go list ./... | grep -v /vendor/)
 
