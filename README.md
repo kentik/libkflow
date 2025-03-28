@@ -52,3 +52,31 @@ test server binary, demo.c, and kflow.h.
 All built artifacts will be placed in `$CURDIR/out/$TARGET` where $CURDIR
 is the current working directory and $TARGET is `$GOOS-$GOARCH`, for
 example `linux-amd64`.
+
+## Building library for internal use cases
+
+Currently only supported when run from macOS.
+
+Internal use cases require a version of libkflow targeting a variety of
+architectures laid out in a specific directory structure. 
+
+First, checkout the desired version from git and ensure it is tagged correctly. 
+```shell
+git checkout $VERSION
+```
+
+First, ensure that the musl cross compilers are installed. This can be done
+with the command:
+
+```shell
+brew install filosottile/musl-cross/musl-cross
+```
+
+Then, run the following command to build the libraries:
+
+```shell
+make internal-libs
+```
+
+This will build the libraries for all architectures and place them in the
+`./bin/libs` directory. Continue steps from the internal use cases documentation.
