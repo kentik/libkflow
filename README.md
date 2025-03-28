@@ -57,7 +57,7 @@ example `linux-amd64`.
 
 Currently only supported when run from macOS.
 
-Internal use cases require a version of libkflow targetting a variety of
+Internal use cases require a version of libkflow targeting a variety of
 architectures laid out in a specific directory structure. 
 
 First, checkout the desired version from git and ensure it is tagged correctly. 
