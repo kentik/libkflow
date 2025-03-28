@@ -79,4 +79,4 @@ make internal-libs
 ```
 
 This will build the libraries for all architectures and place them in the
-`./bin/libs` directory. Continue steps from the internal use cases documentations.
+`./bin/libs` directory. Continue steps from the internal use cases documentation.
