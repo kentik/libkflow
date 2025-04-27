@@ -17,21 +17,22 @@ import (
 
 // Config describes the libkflow configuration.
 type Config struct {
-	email             string
-	token             string
-	capture           Capture
-	proxy             *url.URL
-	api               *url.URL
-	flow              *url.URL
-	metrics           *url.URL
-	sample            int
-	timeout           time.Duration
-	retries           int
-	logger            interface{}
-	program           string
-	version           string
-	registry          go_metrics.Registry
-	useInternalErrors bool
+	email               string
+	token               string
+	capture             Capture
+	proxy               *url.URL
+	api                 *url.URL
+	flow                *url.URL
+	metrics             *url.URL
+	sample              int
+	timeout             time.Duration
+	tlsHandshakeTimeout time.Duration
+	retries             int
+	logger              interface{}
+	program             string
+	version             string
+	registry            go_metrics.Registry
+	useInternalErrors   bool
 
 	metricsPrefix   string
 	metricsInterval time.Duration
@@ -90,6 +91,11 @@ func (c *Config) SetServer(host net.IP, port int) {
 // SetTimeout sets the HTTP request timeout.
 func (c *Config) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
+}
+
+// SetTLSHandshakeTimeout sets the TLSHandshakeTimeout on the http client's Transport
+func (c *Config) SetTLSHandshakeTimeout(timeout time.Duration) {
+	c.tlsHandshakeTimeout = timeout
 }
 
 // SetRetries sets the number of times to try HTTP requests.
