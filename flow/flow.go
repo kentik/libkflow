@@ -16,74 +16,75 @@ type Ckflow C.kflow
 
 const MAX_CUSTOM_STR_LEN = 384
 
+// Flow has had its fields reordered via https://github.com/dkorunic/betteralign to minimize memory usage
 type Flow struct {
-	TimestampNano      int64
-	DstAs              uint32
-	DstGeo             uint32
-	DstMac             uint32 // IGNORED - use DstEthMac
-	HeaderLen          uint32
-	InBytes            uint64
-	InPkts             uint64
-	InputPort          uint32
-	IpSize             uint32
-	Ipv4DstAddr        uint32
-	Ipv4SrcAddr        uint32
-	L4DstPort          uint32
-	L4SrcPort          uint32
-	OutputPort         uint32
-	Protocol           uint32
-	SampledPacketSize  uint32
-	SrcAs              uint32
-	SrcGeo             uint32
-	SrcMac             uint32 // IGNORED - use SrcEthMac
-	TcpFlags           uint32
-	Tos                uint32
-	VlanIn             uint32
-	VlanOut            uint32
-	Ipv4NextHop        uint32
-	MplsType           uint32
-	OutBytes           uint64
-	OutPkts            uint64
-	TcpRetransmit      uint32
-	AppProtocol        uint32
+	SrcBgpCommunity    string
 	SrcFlowTags        string
 	DstFlowTags        string
-	SampleRate         uint32
-	DeviceId           uint32
 	FlowTags           string
-	Timestamp          int64
 	DstBgpAsPath       string
 	DstBgpCommunity    string
 	SrcBgpAsPath       string
-	SrcBgpCommunity    string
+	Ipv6SrcAddr        []byte
+	Ipv6SrcRoutePrefix []byte
+	Customs            []Custom
+	Ipv6DstRoutePrefix []byte
+	Ipv6DstAddr        []byte
+	Ipv6SrcNextHop     []byte
+	Ipv6DstNextHop     []byte
+	InBytes            uint64
+	InPkts             uint64
+	Timestamp          int64
+	DstEthMac          uint64
+	TimestampNano      int64
+	OutBytes           uint64
+	SrcEthMac          uint64
+	OutPkts            uint64
+	SampleRate         uint32
+	DstThirdAsn        uint32
+	MplsType           uint32
+	VlanOut            uint32
+	VlanIn             uint32
+	TcpRetransmit      uint32
+	AppProtocol        uint32
+	Tos                uint32
+	TcpFlags           uint32
+	SrcMac             uint32 // IGNORED - use SrcEthMac
+	DeviceId           uint32
+	SrcGeo             uint32
+	SrcAs              uint32
+	SampledPacketSize  uint32
+	Protocol           uint32
+	OutputPort         uint32
+	L4SrcPort          uint32
 	SrcNextHopAs       uint32
 	DstNextHopAs       uint32
 	SrcGeoRegion       uint32
 	DstGeoRegion       uint32
 	SrcGeoCity         uint32
 	DstGeoCity         uint32
-	Big                bool
-	SampleAdj          bool
+	DstAs              uint32
+	DstGeo             uint32
 	Ipv4DstNextHop     uint32
 	Ipv4SrcNextHop     uint32
 	SrcRoutePrefix     uint32
 	DstRoutePrefix     uint32
-	SrcRouteLength     uint8
-	DstRouteLength     uint8
+	DstMac             uint32 // IGNORED - use DstEthMac
+	HeaderLen          uint32
 	SrcSecondAsn       uint32
 	DstSecondAsn       uint32
 	SrcThirdAsn        uint32
-	DstThirdAsn        uint32
-	Ipv6DstAddr        []byte
-	Ipv6SrcAddr        []byte
-	SrcEthMac          uint64
-	DstEthMac          uint64
-	Ipv6SrcNextHop     []byte
-	Ipv6DstNextHop     []byte
-	Ipv6SrcRoutePrefix []byte
-	Ipv6DstRoutePrefix []byte
+	Ipv4NextHop        uint32
+	L4DstPort          uint32
+	Ipv4SrcAddr        uint32
+	Ipv4DstAddr        uint32
+	IpSize             uint32
+	InputPort          uint32
+	DstRouteLength     uint8
+	SrcRouteLength     uint8
+	SampleAdj          bool
 	IsMetric           bool
-	Customs            []Custom
+	Big                bool
 }
 
 type Type int
@@ -103,21 +104,22 @@ const (
 	Addr
 )
 
+// Custom has had its fields reordered via https://github.com/dkorunic/betteralign to minimize memory usage
 type Custom struct {
-	ID   uint32
-	Type Type
 	Str  string
-	U8   byte
-	U16  uint16
-	U32  uint32
 	U64  uint64
-	I8   int8
-	I16  int16
-	I32  int32
-	I64  int64
-	F32  float32
+	Type Type
 	F64  float64
+	I64  int64
+	I32  int32
+	U32  uint32
+	ID   uint32
+	F32  float32
+	I16  int16
+	U16  uint16
 	Addr [17]byte
+	I8   int8
+	U8   byte
 }
 
 func New(cflow *Ckflow) Flow {
