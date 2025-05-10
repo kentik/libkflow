@@ -4,19 +4,23 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/tinylib/msgp/msgp"
+	capnp "zombiezen.com/go/capnproto2"
 
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/log"
 	"github.com/kentik/libkflow/metrics"
-	"github.com/tinylib/msgp/msgp"
-	capnp "zombiezen.com/go/capnproto2"
 )
+
+var messagePrefix = [80]byte{}
 
 // A Sender aggregates and transmits flow information to Kentik.
 type Sender struct {
@@ -54,6 +58,60 @@ func (s *Sender) Send(flow *flow.Flow) {
 	log.Debugf("sending flow to aggregator")
 	flow.DeviceId = uint32(s.Device.ID)
 	s.agg.Add(flow)
+}
+
+// SendFlows sends the flows to the Kentik API, returning the number of bytes sent as the payload.
+func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
+	if s.Device == nil {
+		return 0, fmt.Errorf("device not initialized")
+	}
+
+	s.workers.Add(1)
+	defer s.workers.Done()
+
+	// ensure all flows have the device ID set; otherwise it may not be properly queried
+	for i := range flows {
+		flows[i].DeviceId = uint32(s.Device.ID)
+	}
+
+	// serialize the data
+	_, segment, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	if err != nil {
+		return 0, fmt.Errorf("failed to create capn proto segment: %w", err)
+	}
+	message, err := flow.ToCapnProtoMessage(flows, segment)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert flows to capn proto: %w", err)
+	}
+
+	// write the data with additional gzip compression
+	buf := &bytes.Buffer{}
+	z := gzip.NewWriter(buf)
+	_, err = z.Write(messagePrefix[:])
+	if err != nil {
+		return 0, fmt.Errorf("failed to write empty message header: %w", err)
+	}
+	err = capnp.NewPackedEncoder(z).Encode(message)
+	if err != nil {
+		return 0, fmt.Errorf("failed to encode packed capn proto message: %w", err)
+	}
+	err = z.Close()
+	if err != nil {
+		return 0, fmt.Errorf("failed to close gzip writer: %w", err)
+	}
+
+	// send the compressed and packed message to the Kentik API
+	payloadLength := len(buf.Bytes())
+	err = s.client.SendFlow(s.url.String(), buf)
+	if err != nil {
+		return 0, err
+	}
+
+	if s.Metrics != nil {
+		s.Metrics.BytesSent.Mark(int64(payloadLength))
+	}
+
+	return int64(buf.Len()), nil
 }
 
 // Stop requests a graceful shutdown of the Sender.

@@ -376,6 +376,8 @@ func (c *Client) UpdateInterfacesDirectly(dev *Device, updates map[string]Interf
 	return nil
 }
 
+// SendFlow sends the provided buffer containing a gzipped, cap'n proto packed, representation of flows to the provided
+// url.
 func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	r, err := c.do("POST", url, "application/binary", buf, true)
 	if err != nil {
