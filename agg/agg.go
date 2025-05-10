@@ -6,7 +6,6 @@ import (
 
 	capnp "zombiezen.com/go/capnproto2"
 
-	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
 )
@@ -107,7 +106,7 @@ func (a *Agg) aggregate() {
 }
 
 func (a *Agg) dispatch() {
-	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	_, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
 		a.error(err)
 		return
@@ -123,34 +122,17 @@ func (a *Agg) dispatch() {
 		return
 	}
 
-	root, err := chf.NewRootPackedCHF(seg)
-	if err != nil {
-		a.error(err)
-		return
-	}
-
-	msgs, err := root.NewMsgs(int32(len(flows)))
-	if err != nil {
-		a.error(err)
-		return
-	}
-
+	// adjust the sample rate for the provided flows
 	normalizeSampleRate(flows, resampleRateAdj)
 
-	for i, f := range flows {
-		var list chf.Custom_List
-		if n := int32(len(f.Customs)); n > 0 {
-			if list, err = chf.NewCustom_List(seg, n); err != nil {
-				a.error(err)
-				return
-			}
-		}
-
-		f.FillCHF(msgs.At(i), list)
+	// serialize the data using the provided segment (backed by msg)
+	message, err := flow.ToCapnProtoMessage(flows, seg)
+	if err != nil {
+		a.error(err)
+		return
 	}
 
-	root.SetMsgs(msgs)
-	a.output <- msg
+	a.output <- message
 
 	a.metrics.TotalFlowsOut.Mark(int64(count))
 }
