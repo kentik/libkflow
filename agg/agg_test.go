@@ -7,10 +7,11 @@ import (
 
 	capnp "zombiezen.com/go/capnproto2"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAggSimple(t *testing.T) {
@@ -68,8 +69,6 @@ func setup(t *testing.T, interval time.Duration, fps int) (*testState, *assert.A
 	metrics := &metrics.Metrics{
 		TotalFlowsIn:   metrics.NewMeter(),
 		TotalFlowsOut:  metrics.NewMeter(),
-		OrigSampleRate: metrics.NewHistogram(metrics.NewUniformSample(100)),
-		NewSampleRate:  metrics.NewHistogram(metrics.NewUniformSample(100)),
 		RateLimitDrops: metrics.NewMeter(),
 		BytesSent:      metrics.NewMeter(),
 	}
