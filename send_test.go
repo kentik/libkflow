@@ -8,14 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	capnp "zombiezen.com/go/capnproto2"
+
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
-	"github.com/stretchr/testify/assert"
-	capnp "zombiezen.com/go/capnproto2"
 )
 
 func TestSender(t *testing.T) {
@@ -37,6 +38,38 @@ func TestSender(t *testing.T) {
 	assert.True(sender.Stop(100 * time.Millisecond))
 	assert.Greater(sender.Metrics.BytesSent.Count(), int64(0))
 	assert.Equal(flowToCHF(expected, t).String(), msgs.At(0).String())
+}
+
+func TestSender_SendFlows(t *testing.T) {
+	sender, server, assert := setup(t)
+
+	expected1 := flow.Flow{
+		DeviceId:  uint32(sender.Device.ID),
+		SrcAs:     rand.Uint32(),
+		DstAs:     rand.Uint32(),
+		SampleAdj: true,
+	}
+	expected2 := flow.Flow{
+		DeviceId:  uint32(sender.Device.ID),
+		SrcAs:     rand.Uint32(),
+		DstAs:     rand.Uint32(),
+		SampleAdj: true,
+	}
+
+	flows := []flow.Flow{expected1, expected2}
+	n, err := sender.SendFlows(flows)
+	assert.NoError(err)
+
+	msgs, err := receive(server)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(int64(len(flows)), sender.Metrics.TotalFlowsIn.Count())
+	assert.Equal(int64(len(flows)), sender.Metrics.TotalFlowsOut.Count())
+	assert.Equal(n, sender.Metrics.BytesSent.Count())
+	assert.Equal(len(flows), msgs.Len())
+	assert.Equal(flowToCHF(expected1, t).String(), msgs.At(0).String())
+	assert.Equal(flowToCHF(expected2, t).String(), msgs.At(1).String())
 }
 
 func TestSenderStop(t *testing.T) {

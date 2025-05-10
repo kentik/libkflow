@@ -65,9 +65,13 @@ func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 	if s.Device == nil {
 		return 0, fmt.Errorf("device not initialized")
 	}
+	if len(flows) == 0 {
+		return 0, nil
+	}
 
-	s.workers.Add(1)
-	defer s.workers.Done()
+	if s.Metrics != nil {
+		s.Metrics.TotalFlowsIn.Mark(int64(len(flows)))
+	}
 
 	// ensure all flows have the device ID set; otherwise it may not be properly queried
 	for i := range flows {
@@ -101,17 +105,18 @@ func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 	}
 
 	// send the compressed and packed message to the Kentik API
-	payloadLength := len(buf.Bytes())
+	payloadLength := int64(len(buf.Bytes()))
 	err = s.client.SendFlow(s.url.String(), buf)
 	if err != nil {
 		return 0, err
 	}
 
 	if s.Metrics != nil {
-		s.Metrics.BytesSent.Mark(int64(payloadLength))
+		s.Metrics.TotalFlowsOut.Mark(int64(len(flows)))
+		s.Metrics.BytesSent.Mark(payloadLength)
 	}
 
-	return int64(buf.Len()), nil
+	return payloadLength, nil
 }
 
 // Stop requests a graceful shutdown of the Sender.
