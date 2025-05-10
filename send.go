@@ -20,6 +20,8 @@ import (
 	"github.com/kentik/libkflow/metrics"
 )
 
+// messagePrefix is an 80-byte prefix for the message header when sending kflow to the Kentik API. This is a deprecated
+// header, but the bytes must remain for backwards compatibility with the Kentik API.
 var messagePrefix = [80]byte{}
 
 // A Sender aggregates and transmits flow information to Kentik.
