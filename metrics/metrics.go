@@ -20,8 +20,6 @@ type Metrics struct {
 	reg            metrics.Registry
 	TotalFlowsIn   metrics.Meter
 	TotalFlowsOut  metrics.Meter
-	OrigSampleRate metrics.Histogram
-	NewSampleRate  metrics.Histogram
 	RateLimitDrops metrics.Meter
 	BytesSent      metrics.Meter
 }
@@ -35,18 +33,12 @@ func New(companyID int, deviceID int, program, version string) *Metrics {
 
 // NewWithRegistry returns a new Metrics but allows a specific registry to be used rather than creating a new one
 func NewWithRegistry(reg metrics.Registry, companyID int, deviceID int, program, version string) *Metrics {
-	sample := func() metrics.Sample {
-		return metrics.NewExpDecaySample(MetricsSampleSize, MetricsSampleAlpha)
-	}
-
 	suffix := fmt.Sprintf("^ver=%s^ft=%s^dt=%s^level=%s^cid=%s^did=%s", program+"-"+version, program, "libkflow", "primary", strconv.Itoa(companyID), strconv.Itoa(deviceID))
 
 	return &Metrics{
 		reg:            reg,
 		TotalFlowsIn:   metrics.GetOrRegisterMeter("client_Total"+suffix, reg),
 		TotalFlowsOut:  metrics.GetOrRegisterMeter("client_DownsampleFPS"+suffix, reg),
-		OrigSampleRate: metrics.GetOrRegisterHistogram("client_OrigSampleRate"+suffix, reg, sample()),
-		NewSampleRate:  metrics.GetOrRegisterHistogram("client_NewSampleRate"+suffix, reg, sample()),
 		RateLimitDrops: metrics.GetOrRegisterMeter("client_RateLimitDrops"+suffix, reg),
 		BytesSent:      metrics.GetOrRegisterMeter("client_BytesSent"+suffix, reg),
 	}

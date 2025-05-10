@@ -4,10 +4,11 @@ import (
 	"sync"
 	"time"
 
+	capnp "zombiezen.com/go/capnproto2"
+
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
-	capnp "zombiezen.com/go/capnproto2"
 )
 
 type Agg struct {
@@ -134,20 +135,9 @@ func (a *Agg) dispatch() {
 		return
 	}
 
-	var sampleRate uint32
-	var adjustedSR uint32
+	normalizeSampleRate(flows, resampleRateAdj)
 
 	for i, f := range flows {
-		sampleRate = f.SampleRate
-		adjustedSR = sampleRate * 100
-
-		if resampleRateAdj > 1.0 {
-			adjustedSR = uint32(float32(adjustedSR) * resampleRateAdj)
-		}
-
-		f.SampleAdj = true
-		f.SampleRate = adjustedSR
-
 		var list chf.Custom_List
 		if n := int32(len(f.Customs)); n > 0 {
 			if list, err = chf.NewCustom_List(seg, n); err != nil {
@@ -162,8 +152,6 @@ func (a *Agg) dispatch() {
 	root.SetMsgs(msgs)
 	a.output <- msg
 
-	a.metrics.OrigSampleRate.Update(int64(sampleRate))
-	a.metrics.NewSampleRate.Update(int64(adjustedSR))
 	a.metrics.TotalFlowsOut.Mark(int64(count))
 }
 
@@ -171,5 +159,22 @@ func (a *Agg) error(err error) {
 	select {
 	case a.errors <- err:
 	default:
+	}
+}
+
+// normalizeSampleRate adjusts the sample rate in place on the provided [flow.Flow] slice based on a provided
+// adjustment factor if it is > 1.0. The adjustment factor is multiplied by the original sample rate and 100 to get
+// the new sample rate, as it is expected that a [flow.Flow] with a sample rate that does not account for this change.
+func normalizeSampleRate(flows []flow.Flow, resampleRateAdj float32) {
+	for i := range flows {
+		sampleRate := flows[i].SampleRate
+		adjustedSR := sampleRate * 100
+
+		if resampleRateAdj > 1.0 {
+			adjustedSR = uint32(float32(adjustedSR) * resampleRateAdj)
+		}
+
+		flows[i].SampleAdj = true
+		flows[i].SampleRate = adjustedSR
 	}
 }
