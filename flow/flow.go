@@ -262,7 +262,7 @@ func (f *Flow) FillCHF(kflow chf.CHF, list chf.Custom_List) {
 
 	for i, c := range f.Customs {
 		kc := list.At(i)
-		kc.SetId(uint32(c.ID))
+		kc.SetId(c.ID)
 
 		switch c.Type {
 		case Str:
