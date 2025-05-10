@@ -383,7 +383,7 @@ func (c *Client) SendFlow(url string, buf *bytes.Buffer) error {
 	}
 
 	defer r.Body.Close()
-	io.Copy(io.Discard, r.Body)
+	_, _ = io.Copy(io.Discard, r.Body)
 
 	if r.StatusCode != 200 {
 		return fmt.Errorf("api: HTTP status code %d", r.StatusCode)
