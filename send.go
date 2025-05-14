@@ -43,9 +43,10 @@ type Sender struct {
 
 func newSender(url *url.URL, timeout time.Duration) *Sender {
 	tickerCtx, cancelFunc := context.WithCancel(context.Background())
+	clonedUrl := *url
 	return &Sender{
 		exit:             make(chan struct{}),
-		url:              url,
+		url:              &clonedUrl,
 		timeout:          timeout,
 		ticker:           time.NewTicker(20 * time.Minute),
 		tickerCtx:        tickerCtx,
