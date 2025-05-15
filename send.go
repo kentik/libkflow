@@ -65,6 +65,9 @@ func (s *Sender) Send(flow *flow.Flow) {
 // SendFlows sends the flows to the Kentik API, returning the number of bytes sent as the payload. The device ID on
 // the flows is set to the device ID of the sender, regardless of what it was previously set to. This is to ensure all
 // data matches the expectations of the downstream URL/API.
+//
+// This will directly send the slice of flows without any additional downsampling or rate limiting. This does not
+// contribute to the underlying Send call.
 func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 	s.workers.Add(1)
 	defer s.workers.Done()
@@ -88,6 +91,9 @@ func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 	for i := range flows {
 		flows[i].DeviceId = uint32(s.Device.ID)
 	}
+
+	// ensure the sample rate is matching the kentik api expectations
+	flow.NormalizeSampleRate(flows, 0)
 
 	// serialize the data
 	_, segment, err := capnp.NewMessage(capnp.SingleSegment(nil))
