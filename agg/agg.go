@@ -134,7 +134,7 @@ func (a *Agg) dispatch() {
 
 	a.output <- message
 
-	a.metrics.TotalFlowsOut.Mark(int64(count))
+	a.metrics.TotalFlowsOut.Mark(int64(len(flows)))
 }
 
 func (a *Agg) error(err error) {
