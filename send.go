@@ -66,6 +66,9 @@ func (s *Sender) Send(flow *flow.Flow) {
 // the flows is set to the device ID of the sender, regardless of what it was previously set to. This is to ensure all
 // data matches the expectations of the downstream URL/API.
 func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
+	s.workers.Add(1)
+	defer s.workers.Done()
+
 	if s.Device == nil {
 		return 0, fmt.Errorf("device not initialized")
 	}
