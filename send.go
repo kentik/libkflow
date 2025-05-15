@@ -70,6 +70,10 @@ func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 	if len(flows) == 0 {
 		return 0, nil
 	}
+	decoratedURL, err := s.createURLString()
+	if err != nil {
+		return 0, fmt.Errorf("failed to create URL string: %w", err)
+	}
 
 	if s.Metrics != nil {
 		s.Metrics.TotalFlowsIn.Mark(int64(len(flows)))
@@ -108,7 +112,7 @@ func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 
 	// send the compressed and packed message to the Kentik API
 	payloadLength := int64(len(buf.Bytes()))
-	err = s.client.SendFlow(s.url.String(), buf)
+	err = s.client.SendFlow(decoratedURL, buf)
 	if err != nil {
 		return 0, err
 	}
@@ -172,18 +176,18 @@ func (s *Sender) SendEncodedDNS(data []byte) {
 }
 
 func (s *Sender) start(agg *agg.Agg, client *api.Client, device *api.Device, n int) error {
-	q := s.url.Query()
-	q.Set("sid", "0")
-	q.Set("sender_id", device.ClientID())
-
 	s.agg = agg
-	s.url.RawQuery = q.Encode()
 	s.Device = device
 	s.client = client
 	s.workers.Add(n)
 
+	decoratedURL, err := s.createURLString()
+	if err != nil {
+		return fmt.Errorf("failed to create URL string: %w", err)
+	}
+
 	for i := 0; i < n; i++ {
-		go s.dispatch()
+		go s.dispatch(decoratedURL)
 	}
 	go s.monitor()
 	go s.update()
@@ -193,16 +197,16 @@ func (s *Sender) start(agg *agg.Agg, client *api.Client, device *api.Device, n i
 	return nil
 }
 
-func (s *Sender) dispatch() {
+// dispatch runs a loop to send aggregated flow from the [agg.Agg] to the Kentik API.
+func (s *Sender) dispatch(url string) {
 	buf := &bytes.Buffer{}
 	cid := [80]byte{}
-	url := s.url.String()
 	z := gzip.NewWriter(buf)
 
 	for msg := range s.agg.Output() {
 		log.Debugf("dispatching aggregated flow")
 		z.Reset(buf)
-		z.Write(cid[:])
+		_, _ = z.Write(cid[:])
 
 		err := capnp.NewPackedEncoder(z).Encode(msg)
 		if err != nil {
@@ -311,4 +315,22 @@ func (s *Sender) error(err error) {
 	case s.Errors <- err:
 	default:
 	}
+}
+
+// createURLString creates the full URL to use when sending data to the Kentik API.
+func (s *Sender) createURLString() (string, error) {
+	if s.Device == nil {
+		return "", fmt.Errorf("device not initialized")
+	}
+	if s.url == nil {
+		return "", fmt.Errorf("url not initialized")
+	}
+
+	// Create a new URL to avoid modifying the original, backed by the config
+	u := *s.url
+	q := u.Query()
+	q.Set("sid", "0")
+	q.Set("sender_id", s.Device.ClientID())
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
