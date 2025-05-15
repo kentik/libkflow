@@ -5,10 +5,12 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	capnp "zombiezen.com/go/capnproto2"
 
 	"github.com/kentik/libkflow/agg"
@@ -210,4 +212,39 @@ func TestCompress(t *testing.T) {
 		}
 		assert.Equal(flowToCHF(e, t).String(), msgs.At(0).String(), "%d", i)
 	}
+}
+
+func TestSender_createURLString(t *testing.T) {
+	u, err := url.Parse("http://localhost:8080/chf")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:8080/chf", u.String())
+
+	client, _, device, err := test.NewClientServer()
+	require.NoError(t, err)
+
+	m := metrics.New(device.CompanyID, device.ID, "send_test", "1.0.0")
+	agg, err := agg.NewAgg(10*time.Millisecond, 100, m)
+	require.NoError(t, err)
+
+	sender := newSender(u, 1*time.Second)
+	err = sender.start(agg, client, device, 1)
+	require.NoError(t, err)
+
+	// Ensure the backing URL was not modified
+	require.Equal(t, "http://localhost:8080/chf", u.String())
+
+	urlString, err := sender.createURLString()
+	require.NoError(t, err)
+
+	parsedURL, err := url.Parse(urlString)
+	require.NoError(t, err)
+
+	// Primarily ensure "sender_id" is correct, since that is the main form of identifying the device but sid is also
+	// kept for backwards compatibility
+	assert.Equal(t, device.ClientID(), parsedURL.Query().Get("sender_id"))
+	assert.Equal(t, "0", parsedURL.Query().Get("sid"))
+
+	// Ensure the backing URL was not modified
+	require.Equal(t, "http://localhost:8080/chf", u.String())
+
 }
