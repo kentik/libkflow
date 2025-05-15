@@ -62,7 +62,9 @@ func (s *Sender) Send(flow *flow.Flow) {
 	s.agg.Add(flow)
 }
 
-// SendFlows sends the flows to the Kentik API, returning the number of bytes sent as the payload.
+// SendFlows sends the flows to the Kentik API, returning the number of bytes sent as the payload. The device ID on
+// the flows is set to the device ID of the sender, regardless of what it was previously set to. This is to ensure all
+// data matches the expectations of the downstream URL/API.
 func (s *Sender) SendFlows(flows []flow.Flow) (int64, error) {
 	if s.Device == nil {
 		return 0, fmt.Errorf("device not initialized")
