@@ -198,7 +198,7 @@ func (c *Config) start(client *api.Client, dev *api.Device, errors chan<- error)
 		return nil, fmt.Errorf("agg setup error: %s", err)
 	}
 
-	sender := newSender(c.flow, c.timeout)
+	sender := newSender(c.flow)
 	sender.Errors = errors
 	sender.sample = c.sample
 	sender.Metrics = senderMetrics
