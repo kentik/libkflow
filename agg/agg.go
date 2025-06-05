@@ -4,10 +4,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kentik/libkflow/chf"
+	capnp "zombiezen.com/go/capnproto2"
+
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
-	capnp "zombiezen.com/go/capnproto2"
 )
 
 type Agg struct {
@@ -106,7 +106,7 @@ func (a *Agg) aggregate() {
 }
 
 func (a *Agg) dispatch() {
-	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	_, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
 		a.error(err)
 		return
@@ -122,49 +122,19 @@ func (a *Agg) dispatch() {
 		return
 	}
 
-	root, err := chf.NewRootPackedCHF(seg)
+	// adjust the sample rate for the provided flows
+	flow.NormalizeSampleRate(flows, resampleRateAdj)
+
+	// serialize the data using the provided segment (backed by msg)
+	message, err := flow.ToCapnProtoMessage(flows, seg)
 	if err != nil {
 		a.error(err)
 		return
 	}
 
-	msgs, err := root.NewMsgs(int32(len(flows)))
-	if err != nil {
-		a.error(err)
-		return
-	}
+	a.output <- message
 
-	var sampleRate uint32
-	var adjustedSR uint32
-
-	for i, f := range flows {
-		sampleRate = f.SampleRate
-		adjustedSR = sampleRate * 100
-
-		if resampleRateAdj > 1.0 {
-			adjustedSR = uint32(float32(adjustedSR) * resampleRateAdj)
-		}
-
-		f.SampleAdj = true
-		f.SampleRate = adjustedSR
-
-		var list chf.Custom_List
-		if n := int32(len(f.Customs)); n > 0 {
-			if list, err = chf.NewCustom_List(seg, n); err != nil {
-				a.error(err)
-				return
-			}
-		}
-
-		f.FillCHF(msgs.At(i), list)
-	}
-
-	root.SetMsgs(msgs)
-	a.output <- msg
-
-	a.metrics.OrigSampleRate.Update(int64(sampleRate))
-	a.metrics.NewSampleRate.Update(int64(adjustedSR))
-	a.metrics.TotalFlowsOut.Mark(int64(count))
+	a.metrics.TotalFlowsOut.Mark(int64(len(flows)))
 }
 
 func (a *Agg) error(err error) {

@@ -5,8 +5,13 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"net/url"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	capnp "zombiezen.com/go/capnproto2"
 
 	"github.com/kentik/libkflow/agg"
 	"github.com/kentik/libkflow/api"
@@ -14,8 +19,6 @@ import (
 	"github.com/kentik/libkflow/chf"
 	"github.com/kentik/libkflow/flow"
 	"github.com/kentik/libkflow/metrics"
-	"github.com/stretchr/testify/assert"
-	capnp "zombiezen.com/go/capnproto2"
 )
 
 func TestSender(t *testing.T) {
@@ -37,6 +40,38 @@ func TestSender(t *testing.T) {
 	assert.True(sender.Stop(100 * time.Millisecond))
 	assert.Greater(sender.Metrics.BytesSent.Count(), int64(0))
 	assert.Equal(flowToCHF(expected, t).String(), msgs.At(0).String())
+}
+
+func TestSender_SendFlows(t *testing.T) {
+	sender, server, assert := setup(t)
+
+	expected1 := flow.Flow{
+		DeviceId:  uint32(sender.Device.ID),
+		SrcAs:     rand.Uint32(),
+		DstAs:     rand.Uint32(),
+		SampleAdj: true,
+	}
+	expected2 := flow.Flow{
+		DeviceId:  uint32(sender.Device.ID),
+		SrcAs:     rand.Uint32(),
+		DstAs:     rand.Uint32(),
+		SampleAdj: true,
+	}
+
+	flows := []flow.Flow{expected1, expected2}
+	n, err := sender.SendFlows(flows)
+	assert.NoError(err)
+
+	msgs, err := receive(server)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(int64(len(flows)), sender.Metrics.TotalFlowsIn.Count())
+	assert.Equal(int64(len(flows)), sender.Metrics.TotalFlowsOut.Count())
+	assert.Equal(n, sender.Metrics.BytesSent.Count())
+	assert.Equal(len(flows), msgs.Len())
+	assert.Equal(flowToCHF(expected1, t).String(), msgs.At(0).String())
+	assert.Equal(flowToCHF(expected2, t).String(), msgs.At(1).String())
 }
 
 func TestSenderStop(t *testing.T) {
@@ -177,4 +212,39 @@ func TestCompress(t *testing.T) {
 		}
 		assert.Equal(flowToCHF(e, t).String(), msgs.At(0).String(), "%d", i)
 	}
+}
+
+func TestSender_createURLString(t *testing.T) {
+	u, err := url.Parse("http://localhost:8080/chf")
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:8080/chf", u.String())
+
+	client, _, device, err := test.NewClientServer()
+	require.NoError(t, err)
+
+	m := metrics.New(device.CompanyID, device.ID, "send_test", "1.0.0")
+	agg, err := agg.NewAgg(10*time.Millisecond, 100, m)
+	require.NoError(t, err)
+
+	sender := newSender(u, 1*time.Second)
+	err = sender.start(agg, client, device, 1)
+	require.NoError(t, err)
+
+	// Ensure the backing URL was not modified
+	require.Equal(t, "http://localhost:8080/chf", u.String())
+
+	urlString, err := sender.createURLString()
+	require.NoError(t, err)
+
+	parsedURL, err := url.Parse(urlString)
+	require.NoError(t, err)
+
+	// Primarily ensure "sender_id" is correct, since that is the main form of identifying the device but sid is also
+	// kept for backwards compatibility
+	assert.Equal(t, device.ClientID(), parsedURL.Query().Get("sender_id"))
+	assert.Equal(t, "0", parsedURL.Query().Get("sid"))
+
+	// Ensure the backing URL was not modified
+	require.Equal(t, "http://localhost:8080/chf", u.String())
+
 }
