@@ -159,7 +159,3 @@ func (c Column) MarshalFlag() (string, error) {
 	b, err := json.Marshal(c)
 	return string(b), err
 }
-
-func (c *DeviceCreate) NormalizeName() {
-	c.Name = NormalizeName(c.Name)
-}

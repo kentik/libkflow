@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/jessevdk/go-flags"
+
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
 )
@@ -36,7 +37,7 @@ func main() {
 		Token:      "token",
 		CompanyID:  1,
 		DeviceID:   1,
-		DeviceName: api.NormalizeName("dev1"),
+		DeviceName: "dev1",
 		DeviceIP:   "127.0.0.1",
 		Sample:     1,
 		MaxFPS:     4000,

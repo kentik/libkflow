@@ -3,14 +3,7 @@ package api
 import (
 	"fmt"
 	"net"
-	"strings"
 )
-
-// NormalizeName is a helper for normalization of the devices name into an acceptable format for the Kentik API device
-// endpoints.
-func NormalizeName(name string) string {
-	return strings.Replace(name, ".", "_", -1)
-}
 
 func GetInterfaceUpdates(nif *net.Interface) (map[string]InterfaceUpdate, error) {
 	addrs, err := interfaceAddrs(nif)

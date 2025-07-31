@@ -89,7 +89,7 @@ func (c *Client) GetDeviceByID(did int) (*Device, error) {
 }
 
 func (c *Client) GetDeviceByName(name string) (*Device, error) {
-	return c.getdevice(fmt.Sprintf(c.deviceURL, NormalizeName(name)))
+	return c.getdevice(fmt.Sprintf(c.deviceURL, name))
 }
 
 func (c *Client) GetDeviceByIP(ip net.IP) (*Device, error) {
@@ -208,9 +208,6 @@ func (c *Client) CreateDeviceAndSite(siteDevCreate *SiteAndDeviceCreate) (*Devic
 
 	createUrl := c.API.String() + "/deviceAndSite"
 
-	// Remove chars which result in 500
-	siteDevCreate.Device.NormalizeName()
-
 	body, err := json.Marshal(siteDevCreate)
 	if err != nil {
 		return nil, err
@@ -243,9 +240,6 @@ func (c *Client) CreateDevice(create *DeviceCreate) (*Device, error) {
 	if !create.AllowNoIP && len(create.IPs) == 0 {
 		return nil, fmt.Errorf("Missing IP for device")
 	}
-
-	// Remove chars which result in 500
-	create.NormalizeName()
 
 	body, err := json.Marshal(map[string]*DeviceCreate{
 		"device": create,
