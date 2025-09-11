@@ -1,9 +1,15 @@
 module github.com/kentik/libkflow
 
+go 1.23
+
+toolchain go1.23.2
+
+replace zombiezen.com/go/capnproto2 => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
+
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gorilla/mux v1.8.0
-	github.com/hashicorp/go-retryablehttp v0.6.6
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/kentik/kit/go/legacy v0.0.2
 	github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
@@ -15,7 +21,7 @@ require (
 )
 
 require (
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
@@ -26,7 +32,3 @@ require (
 	golang.org/x/tools v0.23.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-go 1.17
-
-replace zombiezen.com/go/capnproto2 => github.com/kentik/go-capnproto2 v0.0.0-20221123170947-5a835423a561
