@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -15,16 +14,20 @@ import (
 	"time"
 
 	"github.com/kentik/kit/go/legacy/go-metrics"
+	"github.com/kentik/kit/go/legacy/golog/logger"
 )
 
 const (
 	influxMaxSendTries          = 2
-	influxSendSleep             = 1 * time.Second
 	influxClientResponseTimeout = 5 * time.Second
 	influxClientKeepAlive       = 60 * time.Second
 	influxClientTLSTimeout      = 5 * time.Second
 	influxContentType           = "application/x-www-form-urlencoded"
+	influxPrefix                = "[influx metrics]"
+	maxHttpBodyLen              = 1000 * 1000 // 1MB
 )
+
+var myLogger Logger = logger.New(logger.Levels.Info)
 
 type INFLUXMetricSet struct {
 	keepZero bool // should metrics with zero values be kept or dropped
@@ -55,6 +58,8 @@ type OpenINFLUXConfig struct {
 	ProxyUrl           string
 	Extra              map[string]string
 	Args               map[string]string // extra config
+	ApiEmail           *string
+	ApiPassword        *string
 }
 
 // OpenINFLUX is a blocking exporter function which reports metrics in r
@@ -87,7 +92,7 @@ func OpenINFLUXWithConfig(c OpenINFLUXConfig) {
 		log.Println(err)
 	}
 	// then once every FlushInterval
-	for _ = range time.Tick(c.FlushInterval) {
+	for range time.Tick(c.FlushInterval) {
 		if err := openINFLUX(&c); nil != err {
 			log.Println(err)
 		}
@@ -135,12 +140,12 @@ func (c *OpenINFLUXConfig) runSendViaSocket() {
 			}
 			continue
 		} else {
-			w.Write(ebytes)
-			w.Flush()
+			_, _ = w.Write(ebytes)
+			_ = w.Flush()
 		}
 
 		if !c.Debug {
-			conn.Close()
+			_ = conn.Close()
 		}
 	}
 }
@@ -160,57 +165,54 @@ func (c *OpenINFLUXConfig) runSendViaHTTP() {
 	if c.ProxyUrl != "" {
 		proxyUrl, err := url.Parse(c.ProxyUrl)
 		if err != nil {
-			if !c.Quiet {
-				fmt.Printf("Error setting proxy: %v\n", err)
-			}
+			myLogger.Errorf(influxPrefix, "ignored: error setting proxy: %s", err)
 		} else {
 			tr.Proxy = http.ProxyURL(proxyUrl)
-			if !c.Quiet {
-				fmt.Printf("Set outbound proxy: %s\n", c.ProxyUrl)
-			}
+			myLogger.Debugf(influxPrefix, "set outbound proxy: %s", c.ProxyUrl)
 		}
 	}
 
-	client := &http.Client{Transport: tr, Timeout: influxClientResponseTimeout}
-
 	for r := range c.Send {
-		if ebytes, err := r.ToWire(); err != nil {
-			if !c.Quiet {
-				fmt.Printf("Error encoding to wire format: %v\n", err)
-			}
+		chunks, err := r.toWireChunks(maxHttpBodyLen)
+		if err != nil {
+			myLogger.Errorf(influxPrefix, "error encoding to wire format: %s", err)
 			continue
-		} else {
+		}
+		for _, chunk := range chunks {
 			if c.Debug {
-				fmt.Printf("Metrics: %v", string(ebytes))
-			} else {
-				for i := 0; i < influxMaxSendTries; i++ {
-					req, err := http.NewRequest("POST", c.Addr, bytes.NewBuffer(ebytes))
-					if err != nil {
-						if !c.Quiet {
-							fmt.Printf("Error Creating Request: %v\n", err)
-						}
-						continue
-					}
-					req.Header.Add("Content-Type", influxContentType)
+				myLogger.Infof(influxPrefix, "metrics: %s", string(chunk))
+				continue
+			}
 
-					resp, err := client.Do(req)
-					if err != nil {
-						if !c.Quiet {
-							if i == influxMaxSendTries-1 {
-								fmt.Printf("Warn Posting to %s, giving up: %v\n", c.Addr, err)
-							} else {
-								fmt.Printf("Retry Posting to %s: %v\n", c.Addr, err)
-							}
-						}
-						client = &http.Client{Transport: tr, Timeout: influxClientResponseTimeout}
+			for i := 0; i < influxMaxSendTries; i++ {
+				req, err := http.NewRequest("POST", c.Addr, bytes.NewBuffer(chunk))
+				if err != nil {
+					myLogger.Errorf(influxPrefix, "error creating request: %s", err)
+					continue
+				}
+				req.Header.Add("Content-Type", influxContentType)
+
+				if c.ApiEmail != nil && c.ApiPassword != nil {
+					req.Header.Add(API_EMAIL_HEADER, *c.ApiEmail)
+					req.Header.Add(API_PASSWORD_HEADER, *c.ApiPassword)
+				}
+
+				client := &http.Client{Transport: tr, Timeout: influxClientResponseTimeout}
+				resp, err := client.Do(req)
+				if err != nil {
+					if i == influxMaxSendTries-1 {
+						myLogger.Errorf(influxPrefix, "posting to %s failed, giving up: %s", c.Addr, err)
 					} else {
-						// Fire and forget
-						io.Copy(ioutil.Discard, resp.Body)
-						resp.Body.Close()
-						break
+						myLogger.Warnf(influxPrefix, "retrying post to %s: %s", c.Addr, err)
 					}
+				} else {
+					// Fire and forget
+					_, _ = io.Copy(io.Discard, resp.Body)
+					_ = resp.Body.Close()
+					break
 				}
 			}
+
 		}
 	}
 }
@@ -279,13 +281,12 @@ func openINFLUX(c *OpenINFLUXConfig) error {
 }
 
 func (m *INFLUXMetric) ToWire() []byte {
-	tags := make([]string, (len(m.Tags))+2)
-	tags[0] = m.Metric
-	tags[1] = "type=" + m.Type
-	i := 2
+	tags := make([]string, 0, (len(m.Tags))+2)
+	tags = append(tags, m.Metric)
+	tags = append(tags, "type="+influxEscape(m.Type))
+
 	for k, v := range m.Tags {
-		tags[i] = k + "=" + v
-		i++
+		tags = append(tags, fmt.Sprintf("%s=%s", influxEscape(k), influxEscape(v)))
 	}
 
 	return []byte(fmt.Sprintf("%s value=%d %d\n", strings.Join(tags, ","), m.Value, m.Timestamp))
@@ -301,6 +302,36 @@ func (m *INFLUXMetricSet) ToWire() ([]byte, error) {
 		buf.Write(met.ToWire())
 	}
 	return buf.Bytes(), nil
+}
+
+// toWireChunks is much like ToWire, except it returns a slice of byte slices
+// instead of just one byte slice. Assuming that maxChunkSize >
+// len(InfluxMetric.ToWire()) for all metrics in the set, each byte slice
+// returned by ToWireChunks is smaller than maxChunkSize. Any metric in the set
+// that is larger than maxChunkSize will be in its own chunk.
+func (m *INFLUXMetricSet) toWireChunks(maxChunkSize int) ([][]byte, error) {
+	var buf bytes.Buffer
+	chunks := make([][]byte, 0)
+
+	saveChunk := func() {
+		chunk := make([]byte, buf.Len())
+		copy(chunk, buf.Bytes())
+		buf.Reset()
+		chunks = append(chunks, chunk)
+	}
+
+	for _, met := range m.metrics {
+		metWire := met.ToWire()
+		if buf.Len()+len(metWire) >= maxChunkSize {
+			saveChunk()
+		}
+		buf.Write(metWire)
+	}
+
+	if buf.Len() > 0 {
+		saveChunk()
+	}
+	return chunks, nil
 }
 
 func (m *INFLUXMetricSet) Add(met *INFLUXMetric) {

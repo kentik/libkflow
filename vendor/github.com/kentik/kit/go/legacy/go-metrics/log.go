@@ -38,6 +38,7 @@ func Log(r Registry, d time.Duration, l *log.Logger) {
 				l.Printf("  95%%:         %12.2f\n", ps[2])
 				l.Printf("  99%%:         %12.2f\n", ps[3])
 				l.Printf("  99.9%%:       %12.2f\n", ps[4])
+				l.Printf("  sum:         %9d\n", h.Sum())
 			case Meter:
 				m := metric.Snapshot()
 				l.Printf("meter %s\n", name)
@@ -64,6 +65,7 @@ func Log(r Registry, d time.Duration, l *log.Logger) {
 				l.Printf("  5-min rate:  %12.2f\n", t.Rate5())
 				l.Printf("  15-min rate: %12.2f\n", t.Rate15())
 				l.Printf("  mean rate:   %12.2f\n", t.RateMean())
+				l.Printf("  sum:         %9d\n", t.Sum())
 			}
 		})
 	}

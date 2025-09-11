@@ -11,10 +11,10 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/kentik/kit/go/legacy v0.0.2
+	github.com/kentik/kit/go/legacy v0.0.42
 	github.com/robfig/cron v0.0.0-20160927164231-9585fd555638
 	github.com/rs/zerolog v1.33.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.3
 	github.com/tinylib/msgp v1.1.6
 	go.uber.org/goleak v1.1.10
 	zombiezen.com/go/capnproto2 v2.18.2+incompatible

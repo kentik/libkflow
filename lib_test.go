@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
+	"github.com/kentik/kit/go/legacy/common/cmetrics"
 	"github.com/kentik/kit/go/legacy/go-metrics"
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
@@ -442,17 +443,28 @@ var (
 	token      string
 )
 
+var (
+	_ cmetrics.Logger = (*stubLogger)(nil)
+	_ cmetrics.Logger = (*stubLeveledLogger)(nil)
+)
+
 type stubLogger struct {
 	count uint32
 }
 
-func (s *stubLogger) Printf(string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLogger) Printf(string, ...interface{})         { atomic.AddUint32(&s.count, 1) }
+func (s *stubLogger) Debugf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLogger) Infof(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
+func (s *stubLogger) Warnf(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
+func (s *stubLogger) Errorf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLogger) Panicf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
 
 type stubLeveledLogger struct {
 	count uint32
 }
 
-func (s *stubLeveledLogger) Errorf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
-func (s *stubLeveledLogger) Infof(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
 func (s *stubLeveledLogger) Debugf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLeveledLogger) Infof(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
 func (s *stubLeveledLogger) Warnf(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
+func (s *stubLeveledLogger) Errorf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLeveledLogger) Panicf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }

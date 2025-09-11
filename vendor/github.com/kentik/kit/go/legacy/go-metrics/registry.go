@@ -187,7 +187,7 @@ func RegisterMeter(name string) Meter {
 	err := DefaultRegistry.Register(name, m)
 	if err != nil {
 		// We don't have a log here -- just yell to stderr
-		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v", name, err)
+		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v\n", name, err)
 	}
 	return m
 }
@@ -197,7 +197,7 @@ func RegisterCounter(name string) Counter {
 	err := DefaultRegistry.Register(name, c)
 	if err != nil {
 		// We don't have a log here -- just yell to stderr
-		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v", name, err)
+		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v\n", name, err)
 	}
 	return c
 }
@@ -207,7 +207,7 @@ func RegisterGauge(name string) Gauge {
 	err := DefaultRegistry.Register(name, g)
 	if err != nil {
 		// We don't have a log here -- just yell to stderr
-		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v", name, err)
+		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v\n", name, err)
 	}
 	return g
 }
@@ -217,7 +217,7 @@ func RegisterTimer(name string) Timer {
 	err := DefaultRegistry.Register(name, t)
 	if err != nil {
 		// We don't have a log here -- just yell to stderr
-		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v", name, err)
+		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v\n", name, err)
 	}
 	return t
 }
@@ -235,7 +235,7 @@ func RegisterHistogram(name string) Histogram {
 	err := DefaultRegistry.Register(name, h)
 	if err != nil {
 		// We don't have a log here -- just yell to stderr
-		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v", name, err)
+		fmt.Fprintf(os.Stderr, "Error on metric registration %s: %v\n", name, err)
 	}
 	return h
 }
