@@ -33,11 +33,11 @@ func NewClientServer() (*api.Client, *Server, *api.Device, error) {
 		}
 	}
 
-	server, err := NewServer("127.0.0.1", 0, false, true)
+	server, err := NewServer("127.0.0.1", 0, false, true, email, token, device)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	go server.Serve(email, token, device)
+	go server.RunHttpServer()
 
 	client := api.NewClient(api.ClientConfig{
 		Email:   email,

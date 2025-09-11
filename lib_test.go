@@ -1,6 +1,7 @@
 package libkflow_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,15 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
+
 	"github.com/kentik/kit/go/legacy/go-metrics"
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/kentik/libkflow/flow"
 	metrics2 "github.com/kentik/libkflow/metrics"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 )
 
 func TestNewSenderWithDeviceID(t *testing.T) {
@@ -276,9 +278,11 @@ func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
 	assert.NotNil(s)
 	s.Stop(time.Second)
 
-	server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	time.Sleep(time.Second)
+	err = server.StopHttpServer(ctx)
+	require.NoError(t, err)
 
 	goleak.VerifyNone(t, ignore)
 }
