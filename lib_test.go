@@ -444,20 +444,8 @@ var (
 )
 
 var (
-	_ cmetrics.Logger = (*stubLogger)(nil)
 	_ cmetrics.Logger = (*stubLeveledLogger)(nil)
 )
-
-type stubLogger struct {
-	count uint32
-}
-
-func (s *stubLogger) Printf(string, ...interface{})         { atomic.AddUint32(&s.count, 1) }
-func (s *stubLogger) Debugf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
-func (s *stubLogger) Infof(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
-func (s *stubLogger) Warnf(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
-func (s *stubLogger) Errorf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
-func (s *stubLogger) Panicf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
 
 type stubLeveledLogger struct {
 	count uint32
