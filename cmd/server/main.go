@@ -110,14 +110,7 @@ func main() {
 		}
 	}
 
-	s, err := test.NewServer(args.Host, args.Port, args.TLS, args.Quiet)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("listening on %s:%d", s.Host, s.Port)
-
-	err = s.Serve(args.Email, args.Token, &api.Device{
+	device := api.Device{
 		ID:          args.DeviceID,
 		Name:        args.DeviceName,
 		IP:          net.ParseIP(args.DeviceIP),
@@ -125,8 +118,16 @@ func main() {
 		MaxFlowRate: args.MaxFPS,
 		CompanyID:   args.CompanyID,
 		Customs:     args.Customs,
-	})
+	}
 
+	s, err := test.NewServer(args.Host, args.Port, args.TLS, args.Quiet, args.Email, args.Token, &device)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("listening on %s:%d", s.Host, s.Port)
+
+	err = s.RunHttpServer()
 	if err != nil {
 		log.Fatal(err)
 	}

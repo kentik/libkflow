@@ -53,6 +53,7 @@ func WriteOnce(r Registry, w io.Writer) {
 			fmt.Fprintf(w, "  95%%:         %12.2f\n", ps[2])
 			fmt.Fprintf(w, "  99%%:         %12.2f\n", ps[3])
 			fmt.Fprintf(w, "  99.9%%:       %12.2f\n", ps[4])
+			fmt.Fprintf(w, "  sum:         %9d\n", h.Sum())
 		case Meter:
 			m := metric.Snapshot()
 			fmt.Fprintf(w, "meter %s\n", namedMetric.name)
@@ -79,6 +80,7 @@ func WriteOnce(r Registry, w io.Writer) {
 			fmt.Fprintf(w, "  5-min rate:  %12.2f\n", t.Rate5())
 			fmt.Fprintf(w, "  15-min rate: %12.2f\n", t.Rate15())
 			fmt.Fprintf(w, "  mean rate:   %12.2f\n", t.RateMean())
+			fmt.Fprintf(w, "  sum:         %9d\n", t.Sum())
 		}
 	}
 }

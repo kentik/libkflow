@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -23,29 +24,29 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gorilla/mux"
-	"github.com/kentik/libkflow/api"
-	"github.com/kentik/libkflow/chf"
-	"github.com/robfig/cron"
 	"github.com/tinylib/msgp/msgp"
 	capnp "zombiezen.com/go/capnproto2"
+
+	"github.com/kentik/libkflow/api"
+	"github.com/kentik/libkflow/chf"
 )
 
 type Server struct {
-	Host     net.IP
-	Port     int
-	Email    string
-	Token    string
-	Device   *api.Device
-	Log      *log.Logger
-	quiet    bool
-	flows    chan chf.PackedCHF
-	res      chan *api.DNSResponse
-	mux      *mux.Router
-	listener net.Listener
-	cron     *cron.Cron
+	Host   net.IP
+	Port   int
+	Email  string
+	Token  string
+	Device *api.Device
+	Log    *log.Logger
+	quiet  bool
+	flows  chan chf.PackedCHF
+	res    chan *api.DNSResponse
+
+	HttpServer *http.Server
+	listener   net.Listener
 }
 
+// global counters for flows, packets, and bytes for white box inspection/logging
 var (
 	flowCounter   uint64
 	packetCounter uint64
@@ -59,7 +60,7 @@ const (
 	DNS  = "/dns"
 )
 
-func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
+func NewServer(host string, port int, tls, quiet bool, email, token string, dev *api.Device) (*Server, error) {
 	var listener net.Listener
 
 	addr, err := net.ResolveTCPAddr("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
@@ -81,50 +82,44 @@ func NewServer(host string, port int, tls, quiet bool) (*Server, error) {
 
 	addr = listener.Addr().(*net.TCPAddr)
 
-	return &Server{
-		Host:     addr.IP,
-		Port:     addr.Port,
-		Log:      log.New(os.Stderr, "", log.LstdFlags),
+	s := &Server{
+		Host: addr.IP,
+		Port: addr.Port,
+		Log:  log.New(os.Stderr, "", log.LstdFlags),
+
+		Email:  email,
+		Token:  token,
+		Device: dev,
+
 		quiet:    quiet,
 		flows:    make(chan chf.PackedCHF, 100),
 		res:      make(chan *api.DNSResponse, 100),
-		mux:      mux.NewRouter(),
 		listener: listener,
-	}, nil
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(API+"/device/{did}", s.wrap(s.device))
+	mux.HandleFunc(API+"/device/", s.wrap(s.create))
+	mux.HandleFunc(API+"/deviceAndSite", s.wrap(s.createDeviceAndSite))
+	mux.HandleFunc(API+"/device/{did}/interfaces", s.wrap(s.interfaces))
+	mux.HandleFunc(API+"/company/{cid}/device/{did}/tags/snmp", s.wrap(s.update))
+	mux.HandleFunc(FLOW, s.wrap(s.flow))
+	mux.HandleFunc(TSDB, s.wrap(s.tsdb))
+	mux.HandleFunc(DNS, s.wrap(s.dns))
+	mux.HandleFunc(API+"/devices", s.wrap(s.devices))
+
+	s.HttpServer = &http.Server{
+		Handler: mux,
+	}
+	return s, nil
 }
 
-func (s *Server) Serve(email, token string, dev *api.Device) error {
-	s.Email = email
-	s.Token = token
-	s.Device = dev
-
-	s.mux.HandleFunc(API+"/device/{did}", s.wrap(s.device))
-	s.mux.HandleFunc(API+"/device/", s.wrap(s.create))
-	s.mux.HandleFunc(API+"/deviceAndSite", s.wrap(s.createDeviceAndSite))
-	s.mux.HandleFunc(API+"/device/{did}/interfaces", s.wrap(s.interfaces))
-	s.mux.HandleFunc(API+"/company/{cid}/device/{did}/tags/snmp", s.wrap(s.update))
-	s.mux.HandleFunc(FLOW, s.wrap(s.flow))
-	s.mux.HandleFunc(TSDB, s.wrap(s.tsdb))
-	s.mux.HandleFunc(DNS, s.wrap(s.dns))
-	s.mux.HandleFunc(API+"/devices", s.wrap(s.devices))
-
-	c := cron.New()
-	s.cron = c
-	c.AddFunc("* * * * * *", func() {
-		flows := atomic.SwapUint64(&flowCounter, 0)
-		packets := atomic.SwapUint64(&packetCounter, 0)
-		bytes := atomic.SwapUint64(&byteCounter, 0)
-		if flows > 0 || packets > 0 || bytes > 0 {
-			s.Log.Printf("flows: %12d, packets: %12d, bytes: %12d", flows, packets, bytes)
-		}
-	})
-	c.Start()
-
-	return http.Serve(s.listener, s.mux)
+func (s *Server) RunHttpServer() error {
+	return s.HttpServer.Serve(s.listener)
 }
 
-func (s *Server) Close() {
-	s.cron.Stop()
+func (s *Server) StopHttpServer(ctx context.Context) error {
+	return s.HttpServer.Shutdown(ctx)
 }
 
 func (s *Server) URL(path string) *url.URL {
@@ -141,7 +136,7 @@ func (s *Server) Dns() <-chan *api.DNSResponse {
 }
 
 func (s *Server) device(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["did"]
+	id := r.PathValue("did")
 
 	switch {
 	case id == strconv.Itoa(s.Device.ID):
@@ -425,3 +420,23 @@ func tlslistener(tcp net.Listener, host string, addr *net.TCPAddr) (net.Listener
 }
 
 type handler func(http.ResponseWriter, *http.Request)
+
+// logCounters logs the current counters for flows, packets, and bytes at a specified frequency. This can be added
+// to tests as a way to observe any errant or odd behavior.
+func logCounters(ctx context.Context, l *log.Logger, frequency time.Duration) {
+	ticker := time.NewTicker(frequency)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			flows := atomic.SwapUint64(&flowCounter, 0)
+			packets := atomic.SwapUint64(&packetCounter, 0)
+			bytes := atomic.SwapUint64(&byteCounter, 0)
+			if flows > 0 || packets > 0 || bytes > 0 {
+				l.Printf("flows: %12d, packets: %12d, bytes: %12d", flows, packets, bytes)
+			}
+		}
+	}
+}

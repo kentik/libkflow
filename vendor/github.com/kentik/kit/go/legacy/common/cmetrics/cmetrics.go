@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kentik/kit/go/legacy/common/logging"
+
 	"github.com/kentik/kit/go/legacy/go-metrics"
 )
 
@@ -18,12 +20,7 @@ var (
 )
 
 // Logger abstracts away the logging implementation
-type Logger interface {
-	Debugf(prefix, format string, v ...interface{})
-	Infof(prefix, format string, v ...interface{})
-	Errorf(prefix, format string, v ...interface{})
-	Warnf(prefix, format string, v ...interface{})
-}
+type Logger logging.Logger
 
 func SetConf(conf string, l Logger, log_prefix string, tsdb_prefix string, tags []string, extra []string, apiEmail *string, apiPassword *string) {
 	SetConfWithRegistry(conf, l, log_prefix, tsdb_prefix, tags, extra, apiEmail, apiPassword, metrics.DefaultRegistry)
@@ -71,6 +68,8 @@ func SetConfWithRegistry(conf string, l Logger, log_prefix string, tsdb_prefix s
 						Extra:              TagsMap(extra),
 						ApiEmail:           apiEmail,
 						ApiPassword:        apiPassword,
+						l:                  l,
+						logPrefix:          log_prefix,
 					})
 				} else {
 					l.Infof(log_prefix, "Metrics: Connecting to [%s]: %s. [TCP]. Debug=%v", dest[0], dest[1], (dest[0] == "tsdb_debug"))
@@ -126,6 +125,8 @@ func SetConfWithRegistry(conf string, l Logger, log_prefix string, tsdb_prefix s
 						MaxHttpOutstanding: MAX_HTTP_REQ,
 						Extra:              TagsMap(extra),
 						Args:               args,
+						ApiEmail:           apiEmail,
+						ApiPassword:        apiPassword,
 					})
 				} else {
 					l.Errorf(log_prefix, "Only HTTP|TCP|UDP endpoint for influx currently supported")

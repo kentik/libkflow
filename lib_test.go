@@ -1,6 +1,7 @@
 package libkflow_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,15 +10,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
+
+	"github.com/kentik/kit/go/legacy/common/cmetrics"
 	"github.com/kentik/kit/go/legacy/go-metrics"
 	"github.com/kentik/libkflow"
 	"github.com/kentik/libkflow/api"
 	"github.com/kentik/libkflow/api/test"
 	"github.com/kentik/libkflow/flow"
 	metrics2 "github.com/kentik/libkflow/metrics"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak"
 )
 
 func TestNewSenderWithDeviceID(t *testing.T) {
@@ -276,9 +279,11 @@ func TestNewSenderWithDeviceNameLeaks(t *testing.T) {
 	assert.NotNil(s)
 	s.Stop(time.Second)
 
-	server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	time.Sleep(time.Second)
+	err = server.StopHttpServer(ctx)
+	require.NoError(t, err)
 
 	goleak.VerifyNone(t, ignore)
 }
@@ -438,17 +443,16 @@ var (
 	token      string
 )
 
-type stubLogger struct {
-	count uint32
-}
-
-func (s *stubLogger) Printf(string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+var (
+	_ cmetrics.Logger = (*stubLeveledLogger)(nil)
+)
 
 type stubLeveledLogger struct {
 	count uint32
 }
 
-func (s *stubLeveledLogger) Errorf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
-func (s *stubLeveledLogger) Infof(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
 func (s *stubLeveledLogger) Debugf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLeveledLogger) Infof(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
 func (s *stubLeveledLogger) Warnf(string, string, ...interface{})  { atomic.AddUint32(&s.count, 1) }
+func (s *stubLeveledLogger) Errorf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
+func (s *stubLeveledLogger) Panicf(string, string, ...interface{}) { atomic.AddUint32(&s.count, 1) }
